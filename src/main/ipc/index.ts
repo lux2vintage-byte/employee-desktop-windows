@@ -1,0 +1,25 @@
+/**
+ * IPC Handler'ları için merkezi index dosyası
+ */
+
+export { setupDatabaseHandlers, initializeDatabaseManager, closeDatabaseManager } from './database-handlers'
+export { setupAppHandlers } from './app-handlers'
+export { setupDepartmentHandlers, initializeDepartmentController } from './department-handlers'
+export { setupPositionHandlers, initializePositionController } from './position-handlers'
+export { setupEmployeeHandlers, initializeEmployeeController } from './employee-handlers'
+export { setupEmployeeDetailsHandlers, initializeEmployeeDetailsController } from './employee-details-handlers'
+export { setupEmployeeDocumentsHandlers, initializeEmployeeDocumentsController } from './employee-documents-handlers'
+export { setupAttendanceHandlers, initializeAttendanceController } from './attendance-handlers'
+export { setupOvertimeHandlers, initializeOvertimeController } from './overtime-handlers'
+export { setupLeaveTypeHandlers, initializeLeaveTypeController } from './leave-type-handlers'
+export { setupLeaveRequestHandlers, initializeLeaveRequestController } from './leave-request-handlers'
+export { setupLeaveBalanceHandlers, initializeLeaveBalanceController } from './leave-balance-handlers'
+export { setupSalaryHandlers, initializeSalaryController } from './salary-handlers'
+export { setupPayrollHandlers, initializePayrollController } from './payroll-handlers'
+export { setupAdvanceHandlers, initializeAdvanceController } from './advance-handlers'
+export { setupPerformanceHandlers, initializePerformanceController } from './performance-handlers'
+export { setupTrainingHandlers, initializeTrainingController } from './training-handlers'
+export { setupDisciplinaryHandlers, initializeDisciplinaryController } from './disciplinary-handlers'
+export { setupOffboardingHandlers, initializeOffboardingController } from './offboarding-handlers'
+export { setupSettingsHandlers, initializeSettingsController } from './settings-handlers'
+export { setupReportHandlers, initializeReportController } from './report-handlers'

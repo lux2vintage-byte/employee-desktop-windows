@@ -1,0 +1,685 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== SISTEM MODELLERİ ====================
+
+// Kullanıcı tablosu
+model User {
+  id                          Int       @id @default(autoincrement())
+  companyname                 String?
+  name                        String
+  lastname                    String
+  taxoffice                   String?
+  taxnumber                   String?
+  type                        String    @default("CORPORATE") // INDIVIDUAL, CORPORATE
+  email                       String    @unique
+  password                    String
+  phone                       String?
+  discountRate                Float     @default(0) @map("discount_rate")
+  role                        String    @default("USER") // USER, ADMIN
+  profilePic                  String?   @map("profile_pic")
+  verificationToken           String?   @map("verification_token")
+  isVerified                  Boolean   @default(false) @map("is_verified")
+  verified                    DateTime?
+  passwordToken               String?   @map("password_token")
+  passwordTokenExpirationDate DateTime? @map("password_token_expiration_date")
+  hashedRefreshToken          String?   @map("hashed_refresh_token")
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// Şirket bilgileri tablosu
+model CompanyInfo {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  shortName          String?  @map("short_name")
+  address            String?
+  phone              String?
+  phone2             String?
+  phone3             String?
+  email              String?
+  taxOffice          String?  @map("tax_office")
+  taxNumber          String?  @map("tax_number")
+  bank1Name          String?  @map("bank1_name")
+  bank1AccountHolder String?  @map("bank1_account_holder")
+  bank1AccountNumber String?  @map("bank1_account_number")
+  bank1IBAN          String?  @map("bank1_iban")
+  bank2Name          String?  @map("bank2_name")
+  bank2AccountHolder String?  @map("bank2_account_holder")
+  bank2AccountNumber String?  @map("bank2_account_number")
+  bank2IBAN          String?  @map("bank2_iban")
+  logo               String?
+  favicon            String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("company_info")
+}
+
+// Email yapılandırması tablosu
+model EmailConfig {
+  id          Int      @id @default(autoincrement())
+  host        String
+  port        Int      @default(587)
+  secure      Boolean  @default(false)
+  user        String
+  password    String
+  fromName    String   @map("from_name")
+  fromAddress String   @map("from_address")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("email_configs")
+}
+
+// Sistem konfigürasyon tablosu (eski)
+model AppConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_config")
+}
+
+// Uygulama ayarları tablosu
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  group     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+// Audit log tablosu
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  tableName String   @map("table_name")
+  recordId  Int      @map("record_id")
+  action    String   // INSERT, UPDATE, DELETE
+  oldValues String?  @map("old_values") // JSON format
+  newValues String?  @map("new_values") // JSON format
+  userId    Int?     @map("user_id")
+  timestamp DateTime @default(now())
+
+  @@map("audit_log")
+}
+
+// ==================== ORGANİZASYONEL YAPI MODELLERİ ====================
+
+// Departman tablosu
+model Department {
+  id                 Int          @id @default(autoincrement())
+  name               String
+  managerId          Int?         @map("manager_id")
+  parentDepartmentId Int?         @map("parent_department_id")
+  costCenterCode     String?      @unique @map("cost_center_code")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  deletedAt          DateTime?    @map("deleted_at")
+
+  manager            Employee?    @relation("DepartmentManager", fields: [managerId], references: [id])
+  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments   Department[] @relation("DepartmentHierarchy")
+  employees          Employee[]   @relation("EmployeeDepartment")
+  positions          Position[]
+  hiringRequests     HiringRequest[]
+
+  @@unique([name, parentDepartmentId])
+  @@map("departments")
+}
+
+// Pozisyon tablosu
+model Position {
+  id             Int        @id @default(autoincrement())
+  title          String
+  departmentId   Int        @map("department_id")
+  jobDescription String?    @map("job_description")
+  baseSalaryMin  Float?     @map("base_salary_min")
+  baseSalaryMax  Float?     @map("base_salary_max")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
+
+  department     Department @relation(fields: [departmentId], references: [id])
+  employees      Employee[]
+  hiringRequests HiringRequest[]
+
+  @@unique([title, departmentId])
+  @@map("positions")
+}
+
+// ==================== PERSONEL YÖNETİMİ MODELLERİ ====================
+
+// Personel tablosu
+model Employee {
+  id             Int       @id @default(autoincrement())
+  employeeCode   String    @unique @map("employee_code")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  identityNumber String    @map("identity_number") // Şifreli
+  emailWork      String?   @unique @map("email_work")
+  emailPersonal  String?   @map("email_personal")
+  phonePrimary   String?   @map("phone_primary")
+  photoUrl       String?   @map("photo_url")
+  departmentId   Int       @map("department_id")
+  positionId     Int       @map("position_id")
+  managerId      Int?      @map("manager_id")
+  hireDate       DateTime  @map("hire_date")
+  contractType   String    @map("contract_type") // Süreli, Süresiz, Stajyer, Freelance
+  status         String    @default("Active") // Active, Passive, OnLeave, Terminated
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  department           Department          @relation("EmployeeDepartment", fields: [departmentId], references: [id])
+  position             Position            @relation(fields: [positionId], references: [id])
+  manager              Employee?           @relation("EmployeeManager", fields: [managerId], references: [id])
+  subordinates         Employee[]          @relation("EmployeeManager")
+  managedDepartments   Department[]        @relation("DepartmentManager")
+  details              EmployeeDetails?
+  documents            EmployeeDocument[]
+  onboardings          Onboarding[]
+  attendanceLogs       AttendanceLog[]
+  overtimes            Overtime[]
+  overtimeApprovals    Overtime[]          @relation("OvertimeApprover")
+  leaveRequests        LeaveRequest[]
+  leaveApprovals       LeaveRequest[]      @relation("LeaveApprover")
+  leaveBalances        LeaveBalance[]
+  salaryHistory        SalaryHistory[]
+  payrolls             Payroll[]
+  advances             SalaryAdvance[]
+  advanceApprovals     SalaryAdvance[]     @relation("AdvanceApprover")
+  performanceReviews   PerformanceReview[] @relation("ReviewedEmployee")
+  givenReviews         PerformanceReview[] @relation("Reviewer")
+  trainings            EmployeeTraining[]
+  disciplinaryActions  DisciplinaryAction[]
+  resignations         Resignation[]
+  allowances           EmployeeAllowance[]
+  paymentHistories     PaymentHistory[]
+
+  @@map("employees")
+}
+
+// Personel detay bilgileri tablosu
+model EmployeeDetails {
+  id                    Int       @id @default(autoincrement())
+  employeeId            Int       @unique @map("employee_id")
+  birthDate             DateTime? @map("birth_date")
+  bloodGroup            String?   @map("blood_group") // A+, A-, B+, B-, AB+, AB-, 0+, 0-
+  gender                String?   // Erkek, Kadın, Diğer
+  maritalStatus         String?   @map("marital_status") // Bekar, Evli, Boşanmış, Dul
+  addressHome           String?   @map("address_home")
+  emergencyContactName  String?   @map("emergency_contact_name")
+  emergencyContactPhone String?   @map("emergency_contact_phone")
+  bankName              String?   @map("bank_name")
+  iban                  String?   // Şifreli
+  socialSecurityNumber  String?   @map("social_security_number") // Şifreli
+  educationLevel        String?   @map("education_level")
+  militaryStatus        String?   @map("military_status") // Yapıldı, Muaf, Tecilli
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  employee              Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("employee_details")
+}
+
+// Personel belgeleri tablosu
+model EmployeeDocument {
+  id           Int       @id @default(autoincrement())
+  employeeId   Int       @map("employee_id")
+  documentType String    @map("document_type") // Sözleşme, Kimlik Fotokopisi, Diploma, Sağlık Raporu, Diğer
+  filePath     String    @map("file_path")
+  uploadDate   DateTime  @default(now()) @map("upload_date")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("employee_documents")
+}
+
+// ==================== ZAMAN YÖNETİMİ MODELLERİ ====================
+
+// Puantaj tablosu
+model AttendanceLog {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  date          DateTime
+  checkInTime   DateTime? @map("check_in_time")
+  checkOutTime  DateTime? @map("check_out_time")
+  breakDuration Int       @default(0) @map("break_duration") // dakika
+  status        String    @default("Geldi") // Geldi, Gelmedi, İzinli, Tatil
+  dailyNote     String?   @map("daily_note")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@map("attendance_logs")
+}
+
+// Fazla mesai tablosu
+model Overtime {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int       @map("employee_id")
+  date           DateTime
+  hours          Float
+  multiplier     Float     @default(1.5)
+  description    String?
+  approvalStatus String    @default("Pending") @map("approval_status") // Pending, Approved, Rejected
+  approvedBy     Int?      @map("approved_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+  approver       Employee? @relation("OvertimeApprover", fields: [approvedBy], references: [id])
+
+  @@map("overtimes")
+}
+
+// ==================== İZİN YÖNETİMİ MODELLERİ ====================
+
+// İzin türleri tablosu
+model LeaveType {
+  id                Int       @id @default(autoincrement())
+  name              String    @unique
+  isPaid            Boolean   @default(true) @map("is_paid")
+  deductsFromAnnual Boolean   @default(false) @map("deducts_from_annual")
+  limitDays         Int?      @map("limit_days")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  leaveRequests     LeaveRequest[]
+
+  @@map("leave_types")
+}
+
+// İzin talepleri tablosu
+model LeaveRequest {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int       @map("employee_id")
+  leaveTypeId Int       @map("leave_type_id")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+  dayCount    Float     @map("day_count")
+  returnDate  DateTime? @map("return_date")
+  reason      String?
+  status      String    @default("Pending") // Pending, Approved, Rejected
+  approvedBy  Int?      @map("approved_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  approver    Employee? @relation("LeaveApprover", fields: [approvedBy], references: [id])
+
+  @@map("leave_requests")
+}
+
+// İzin bakiyeleri tablosu
+model LeaveBalance {
+  id                     Int      @id @default(autoincrement())
+  employeeId             Int      @map("employee_id")
+  year                   Int
+  annualLeaveEntitlement Int      @map("annual_leave_entitlement")
+  transferredDays        Int      @default(0) @map("transferred_days")
+  usedDays               Float    @default(0) @map("used_days")
+  remainingDays          Float    @map("remaining_days")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  employee               Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, year])
+  @@map("leave_balances")
+}
+
+// ==================== MAAŞ PARAMETRELERİ ====================
+
+// Maaş parametreleri tablosu (SGK, vergi dilimleri, asgari ücret vb.)
+model SalaryParameter {
+  id              Int       @id @default(autoincrement())
+  year            Int
+  month           Int?      // null ise yıllık parametre
+  parameterType   String    @map("parameter_type") // MinimumWage, SGKEmployeeRate, SGKEmployerRate, IncomeTaxBracket, StampTax, UnemploymentEmployee, UnemploymentEmployer
+  parameterKey    String    @map("parameter_key") // Örn: bracket1_rate, bracket1_limit
+  parameterValue  Float     @map("parameter_value")
+  description     String?
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([year, month, parameterType, parameterKey])
+  @@map("salary_parameters")
+}
+
+// Kişisel ek ödemeler / kesintiler tablosu
+model EmployeeAllowance {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  type            String    // Allowance (Ek Ödeme), Deduction (Kesinti)
+  category        String    // Transport, Food, Housing, Phone, Fuel, PrivateInsurance, UnionDues, Garnishment, Other
+  name            String
+  amount          Float
+  isPercentage    Boolean   @default(false) @map("is_percentage") // Yüzde mi sabit tutar mı
+  isActive        Boolean   @default(true) @map("is_active")
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime? @map("end_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("employee_allowances")
+}
+
+// Ödeme geçmişi tablosu
+model PaymentHistory {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  payrollId       Int?      @map("payroll_id") // İlişkili bordro
+  paymentType     String    @map("payment_type") // Salary, Advance, Bonus, Other
+  paymentMethod   String    @map("payment_method") // Bank, Cash, Check
+  amount          Float
+  currency        String    @default("TRY")
+  paymentDate     DateTime  @map("payment_date")
+  bankName        String?   @map("bank_name")
+  iban            String?
+  referenceNo     String?   @map("reference_no")
+  description     String?
+  status          String    @default("Completed") // Pending, Completed, Failed, Cancelled
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("payment_history")
+}
+
+// ==================== BORDRO MODELLERİ ====================
+
+// Maaş geçmişi tablosu
+model SalaryHistory {
+  id         Int       @id @default(autoincrement())
+  employeeId Int       @map("employee_id")
+  amount     Float
+  currency   String    @default("TRY") // TRY, USD, EUR
+  periodType String    @default("Aylık") @map("period_type") // Aylık, Saatlik
+  startDate  DateTime  @map("start_date")
+  endDate    DateTime? @map("end_date")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("salary_history")
+}
+
+// Bordro tablosu
+model Payroll {
+  id              Int           @id @default(autoincrement())
+  employeeId      Int           @map("employee_id")
+  periodMonth     Int           @map("period_month")
+  periodYear      Int           @map("period_year")
+  baseSalary      Float         @map("base_salary")
+  totalAdditions  Float         @default(0) @map("total_additions")
+  totalDeductions Float         @default(0) @map("total_deductions")
+  netSalary       Float         @map("net_salary")
+  isFinalized     Boolean       @default(false) @map("is_finalized")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
+
+  employee        Employee      @relation(fields: [employeeId], references: [id])
+  items           PayrollItem[]
+
+  @@unique([employeeId, periodMonth, periodYear])
+  @@map("payrolls")
+}
+
+// Bordro kalemleri tablosu
+model PayrollItem {
+  id          Int      @id @default(autoincrement())
+  payrollId   Int      @map("payroll_id")
+  type        String   // Income, Deduction
+  category    String   // Income: Overtime, Bonus, Transport, Food, Other | Deduction: Tax, Insurance, Advance, Absence, Other
+  description String?
+  amount      Float
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  payroll     Payroll  @relation(fields: [payrollId], references: [id])
+
+  @@map("payroll_items")
+}
+
+// Avans tablosu
+model SalaryAdvance {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  requestDate     DateTime  @default(now()) @map("request_date")
+  amount          Float
+  status          String    @default("Pending") // Pending, Approved, Rejected, Paid, Deducted
+  approvedBy      Int?      @map("approved_by")
+  paymentDate     DateTime? @map("payment_date")
+  deductionPeriod String?   @map("deduction_period") // YYYY-MM format
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  approver        Employee? @relation("AdvanceApprover", fields: [approvedBy], references: [id])
+
+  @@map("salary_advances")
+}
+
+// ==================== PERFORMANS VE EĞİTİM MODELLERİ ====================
+
+// Performans değerlendirme tablosu
+model PerformanceReview {
+  id           Int       @id @default(autoincrement())
+  employeeId   Int       @map("employee_id")
+  reviewerId   Int       @map("reviewer_id")
+  reviewPeriod String    @map("review_period") // "2024 Q1", "2024 Yıl Sonu"
+  score        Float?
+  feedback     String?
+  status       String    @default("Draft") // Draft, Submitted, Acknowledged
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  employee     Employee  @relation("ReviewedEmployee", fields: [employeeId], references: [id])
+  reviewer     Employee  @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  @@map("performance_reviews")
+}
+
+// Eğitim kataloğu tablosu
+model Training {
+  id                Int                @id @default(autoincrement())
+  title             String
+  provider          String?
+  durationHours     Int                @map("duration_hours")
+  category          String?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  deletedAt         DateTime?          @map("deleted_at")
+
+  employeeTrainings EmployeeTraining[]
+
+  @@map("trainings")
+}
+
+// Personel eğitim kayıtları tablosu
+model EmployeeTraining {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int       @map("employee_id")
+  trainingId     Int       @map("training_id")
+  completionDate DateTime? @map("completion_date")
+  status         String    @default("Planned") // Planned, Completed, Failed
+  certificateUrl String?   @map("certificate_url")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+  training       Training  @relation(fields: [trainingId], references: [id])
+
+  @@map("employee_trainings")
+}
+
+// Disiplin kayıtları tablosu
+model DisciplinaryAction {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  incidentDate  DateTime  @map("incident_date")
+  violationType String    @map("violation_type") // İşe Geç Kalma, İş Güvenliği İhlali, Devamsızlık, Görev İhmali, Diğer
+  actionTaken   String    @map("action_taken") // Sözlü Uyarı, Yazılı Uyarı, Tutanak, Maaş Kesintisi, İşten Çıkarma
+  defense       String?
+  documentPath  String?   @map("document_path")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("disciplinary_actions")
+}
+
+// ==================== İŞTEN AYRILMA MODELLERİ ====================
+
+// İstifa/Ayrılma tablosu
+model Resignation {
+  id             Int            @id @default(autoincrement())
+  employeeId     Int            @map("employee_id")
+  requestDate    DateTime       @default(now()) @map("request_date")
+  reasonCategory String         @map("reason_category") // İstifa, Emeklilik, Çıkarılma, Sözleşme Bitimi
+  reasonDetail   String?        @map("reason_detail")
+  lastWorkingDay DateTime?      @map("last_working_day")
+  status         String         @default("Pending") // Pending, Approved, Completed
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  employee       Employee       @relation(fields: [employeeId], references: [id])
+  exitInterview  ExitInterview?
+
+  @@map("resignations")
+}
+
+// Çıkış mülakatı tablosu
+model ExitInterview {
+  id            Int         @id @default(autoincrement())
+  resignationId Int         @unique @map("resignation_id")
+  comments      String?
+  wouldRehire   Boolean?    @map("would_rehire")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  resignation   Resignation @relation(fields: [resignationId], references: [id])
+
+  @@map("exit_interviews")
+}
+
+// ==================== İŞE ALIM VE ORYANTASYON MODELLERİ ====================
+
+// İşe alım talepleri tablosu
+model HiringRequest {
+  id              Int       @id @default(autoincrement())
+  requestCode     String    @unique @map("request_code")
+  departmentId    Int       @map("department_id")
+  positionId      Int       @map("position_id")
+  requestedBy     Int       @map("requested_by")
+  requestDate     DateTime  @default(now()) @map("request_date")
+  quantity        Int       @default(1)
+  priority        String    @default("Normal") // Düşük, Normal, Yüksek, Acil
+  employmentType  String    @map("employment_type") // Tam Zamanlı, Yarı Zamanlı, Stajyer, Sözleşmeli
+  salaryRangeMin  Float?    @map("salary_range_min")
+  salaryRangeMax  Float?    @map("salary_range_max")
+  requirements    String?   // İş gereksinimleri
+  description     String?   // Açıklama
+  status          String    @default("Pending") // Pending, Approved, Rejected, InProgress, Completed, Cancelled
+  approvedBy      Int?      @map("approved_by")
+  approvalDate    DateTime? @map("approval_date")
+  targetDate      DateTime? @map("target_date")
+  completedDate   DateTime? @map("completed_date")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  department      Department @relation(fields: [departmentId], references: [id])
+  position        Position   @relation(fields: [positionId], references: [id])
+
+  @@map("hiring_requests")
+}
+
+// Oryantasyon tablosu
+model Onboarding {
+  id                Int       @id @default(autoincrement())
+  employeeId        Int       @map("employee_id")
+  startDate         DateTime  @map("start_date")
+  endDate           DateTime? @map("end_date")
+  mentorId          Int?      @map("mentor_id")
+  status            String    @default("Planned") // Planned, InProgress, Completed, Cancelled
+  welcomeKitGiven   Boolean   @default(false) @map("welcome_kit_given")
+  itSetupCompleted  Boolean   @default(false) @map("it_setup_completed")
+  hrDocsCompleted   Boolean   @default(false) @map("hr_docs_completed")
+  trainingCompleted Boolean   @default(false) @map("training_completed")
+  notes             String?
+  completionRate    Float     @default(0) @map("completion_rate")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  employee          Employee  @relation(fields: [employeeId], references: [id])
+  tasks             OnboardingTask[]
+
+  @@map("onboardings")
+}
+
+// Oryantasyon görevleri tablosu
+model OnboardingTask {
+  id            Int       @id @default(autoincrement())
+  onboardingId  Int       @map("onboarding_id")
+  title         String
+  description   String?
+  category      String    // HR, IT, Eğitim, Departman, Genel
+  assignedTo    Int?      @map("assigned_to")
+  dueDate       DateTime? @map("due_date")
+  completedDate DateTime? @map("completed_date")
+  status        String    @default("Pending") // Pending, InProgress, Completed, Skipped
+  priority      Int       @default(1) // Sıralama için
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  onboarding    Onboarding @relation(fields: [onboardingId], references: [id])
+
+  @@map("onboarding_tasks")
+}

@@ -1,0 +1,84 @@
+{
+  "name": "personel-yonetimi",
+  "version": "1.0.0",
+  "description": "Personel Yönetimi masaüstü uygulaması - ElectronJS, Vue3 ve SQLite",
+  "main": "./dist/main/main.js",
+  "author": "Personel Yönetimi Ekibi",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\" --kill-others-on-exit",
+    "dev:renderer": "cd src/renderer && npm run dev",
+    "dev:main": "nodemon --exec \"npm run build:main && electron .\" --watch src/main --ext ts --delay 500ms",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p src/main/tsconfig.json && tsc -p src/preload/tsconfig.json",
+    "build:renderer": "cd src/renderer && npm run build",
+    "build:app": "npm run build && electron-builder --config electron-builder.json",
+    "build:win": "npm run build && electron-builder --win --config electron-builder.json",
+    "build:mac": "npm run build && electron-builder --mac --config electron-builder.json",
+    "build:linux": "npm run build && electron-builder --linux --config electron-builder.json",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx src/main/database/seed.ts"
+  },
+  "devDependencies": {
+    "@jest/fake-timers": "^29.7.0",
+    "@jest/globals": "^29.7.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.9.0",
+    "@types/nodemailer": "^7.0.4",
+    "concurrently": "^8.2.2",
+    "electron": "^27.3.11",
+    "electron-builder": "^24.6.4",
+    "electron-rebuild": "^3.2.9",
+    "fast-check": "^4.5.3",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "jest-mock": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "prisma": "^5.7.1",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "better-sqlite3": "^9.6.0",
+    "electron-log": "^4.4.8",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.7"
+  },
+  "build": {
+    "appId": "com.personel-yonetimi.app",
+    "productName": "Personel Yönetimi",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "prisma/",
+        "to": "prisma/"
+      },
+      {
+        "from": "node_modules/.prisma/",
+        "to": "node_modules/.prisma/"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
