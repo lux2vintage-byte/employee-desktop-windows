@@ -203,11 +203,11 @@ const loadEmployeeData = async () => {
       selectedEmployee.value = res.data
       // Maaş bilgisini yükle
       const salaryRes = await window.electronAPI.salary.getCurrent(Number(selectedEmployeeId.value))
-      if (salaryRes && salaryRes.amount) form.grossSalary = salaryRes.amount
+      if (salaryRes.success && salaryRes.data && salaryRes.data.amount) form.grossSalary = salaryRes.data.amount
       // İzin bakiyesini yükle
       const year = new Date().getFullYear()
       const leaveRes = await window.electronAPI.leaveBalance.get(Number(selectedEmployeeId.value), year)
-      if (leaveRes && leaveRes.remainingDays) form.unusedLeaveDays = leaveRes.remainingDays
+      if (leaveRes.success && leaveRes.data && typeof leaveRes.data.remainingDays === 'number') form.unusedLeaveDays = leaveRes.data.remainingDays
       calculateWorkingPeriod()
     }
   } catch (err) { /* ignore */ }

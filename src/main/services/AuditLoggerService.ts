@@ -51,8 +51,25 @@ export class AuditLoggerService {
     }
 
     // Create audit log entry
-    const auditLog = await this.prisma.auditLog.create({
-      data: {
+    try {
+      // Create audit log entry
+      const auditLog = await this.prisma.auditLog.create({
+        data: {
+          tableName,
+          recordId,
+          action,
+          oldValues: oldValues ? JSON.stringify(oldValues) : null,
+          newValues: newValues ? JSON.stringify(newValues) : null,
+          userId: userId ?? null,
+          timestamp: new Date()
+        }
+      })
+      return auditLog
+    } catch (error) {
+      console.error('Audit log oluşturulurken hata:', error)
+      // Return dummy object to prevent crash
+      return {
+        id: -1,
         tableName,
         recordId,
         action,
@@ -60,10 +77,10 @@ export class AuditLoggerService {
         newValues: newValues ? JSON.stringify(newValues) : null,
         userId: userId ?? null,
         timestamp: new Date()
-      }
-    })
+      } as AuditLog
+    }
 
-    return auditLog
+
   }
 
   /**

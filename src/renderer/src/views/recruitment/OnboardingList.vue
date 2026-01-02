@@ -325,7 +325,7 @@ const closeModal = () => { showModal.value = false; resetForm() }
 
 const resetForm = () => {
   form.employeeId = null
-  form.startDate = new Date().toISOString().split('T')[0]
+  form.startDate = new Date().toISOString().split('T')[0] || ''
   form.endDate = ''
   form.mentorId = null
   form.notes = ''

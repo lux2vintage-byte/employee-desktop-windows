@@ -301,7 +301,7 @@ const updateStats = () => {
   stats.completed = requests.value.filter(r => r.status === 'Completed').length
 }
 
-const openCreateModal = () => { isEditing.value = false; resetForm(); form.requestDate = new Date().toISOString().split('T')[0]; showModal.value = true }
+const openCreateModal = () => { isEditing.value = false; resetForm(); form.requestDate = new Date().toISOString().split('T')[0] || ''; showModal.value = true }
 const openEditModal = (req: any) => {
   isEditing.value = true
   Object.assign(form, { id: req.id, employeeId: req.employeeId, requestDate: req.requestDate?.split('T')[0] || '', reasonCategory: req.reasonCategory, reasonDetail: req.reasonDetail || '', lastWorkingDay: req.lastWorkingDay?.split('T')[0] || '' })

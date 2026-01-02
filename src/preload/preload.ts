@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     delete: (id: number) => ipcRenderer.invoke('user-delete', id),
     login: (email: string, password: string) => ipcRenderer.invoke('user-login', email, password),
     forgotPassword: (email: string) => ipcRenderer.invoke('user-forgot-password', email),
-    changePassword: (id: number, currentPassword: string, newPassword: string) => 
+    changePassword: (id: number, currentPassword: string, newPassword: string) =>
       ipcRenderer.invoke('user-change-password', id, currentPassword, newPassword),
   },
 
@@ -58,7 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getHierarchy: () => ipcRenderer.invoke('department-get-hierarchy'),
     getChildren: (parentId: number) => ipcRenderer.invoke('department-get-children', parentId),
     getRoots: () => ipcRenderer.invoke('department-get-roots'),
-    assignManager: (departmentId: number, managerId: number | null, userId?: number) => 
+    assignManager: (departmentId: number, managerId: number | null, userId?: number) =>
       ipcRenderer.invoke('department-assign-manager', departmentId, managerId, userId),
     findByName: (name: string) => ipcRenderer.invoke('department-find-by-name', name),
     findByCostCenter: (costCenterCode: string) => ipcRenderer.invoke('department-find-by-cost-center', costCenterCode),
@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('position-update', id, data, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('position-delete', id, userId),
     restore: (id: number, userId?: number) => ipcRenderer.invoke('position-restore', id, userId),
-    validateSalaryRange: (positionId: number, salary: number) => 
+    validateSalaryRange: (positionId: number, salary: number) =>
       ipcRenderer.invoke('position-validate-salary-range', positionId, salary),
   },
 
@@ -89,7 +89,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     restore: (id: number, userId?: number) => ipcRenderer.invoke('employee-restore', id, userId),
     getByDepartment: (departmentId: number) => ipcRenderer.invoke('employee-get-by-department', departmentId),
     getByManager: (managerId: number) => ipcRenderer.invoke('employee-get-by-manager', managerId),
-    changeStatus: (id: number, status: string, userId?: number) => 
+    changeStatus: (id: number, status: string, userId?: number) =>
       ipcRenderer.invoke('employee-change-status', id, status, userId),
     generateCode: () => ipcRenderer.invoke('employee-generate-code'),
     searchByName: (searchTerm: string) => ipcRenderer.invoke('employee-search-by-name', searchTerm),
@@ -98,22 +98,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ==================== PERSONEL DETAY İŞLEMLERİ ====================
   employeeDetails: {
-    getByEmployeeId: (employeeId: number) => ipcRenderer.invoke('employee-details-get-by-employee', employeeId),
+    getByEmployeeId: (employeeId: number) => ipcRenderer.invoke('employee-details-get-by-employee-id', employeeId),
     getDecrypted: (employeeId: number) => ipcRenderer.invoke('employee-details-get-decrypted', employeeId),
-    create: (employeeId: number, data: any, userId?: number) => 
+    create: (employeeId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('employee-details-create', employeeId, data, userId),
-    update: (employeeId: number, data: any, userId?: number) => 
+    update: (employeeId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('employee-details-update', employeeId, data, userId),
   },
 
   // ==================== PERSONEL BELGE İŞLEMLERİ ====================
   employeeDocuments: {
-    getByEmployeeId: (employeeId: number) => ipcRenderer.invoke('employee-documents-get-by-employee', employeeId),
-    getByType: (employeeId: number, documentType: string) => 
+    getByEmployeeId: (employeeId: number) => ipcRenderer.invoke('employee-documents-get-by-employee-id', employeeId),
+    getByType: (employeeId: number, documentType: string) =>
       ipcRenderer.invoke('employee-documents-get-by-type', employeeId, documentType),
-    upload: (employeeId: number, data: any, userId?: number) => 
+    upload: (employeeId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('employee-documents-upload', employeeId, data, userId),
-    delete: (documentId: number, userId?: number) => 
+    delete: (documentId: number, userId?: number) =>
       ipcRenderer.invoke('employee-documents-delete', documentId, userId),
   },
 
@@ -121,18 +121,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   attendance: {
     getAll: (options?: any) => ipcRenderer.invoke('attendance-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('attendance-get-by-id', id),
-    getByEmployee: (employeeId: number, dateRange?: any) => 
+    getByEmployee: (employeeId: number, dateRange?: any) =>
       ipcRenderer.invoke('attendance-get-by-employee', employeeId, dateRange),
     getByDate: (date: string) => ipcRenderer.invoke('attendance-get-by-date', date),
     checkIn: (employeeId: number, time?: string) => ipcRenderer.invoke('attendance-check-in', employeeId, time),
     checkOut: (employeeId: number, time?: string) => ipcRenderer.invoke('attendance-check-out', employeeId, time),
-    setBreakDuration: (logId: number, minutes: number, userId?: number) => 
+    setBreakDuration: (logId: number, minutes: number, userId?: number) =>
       ipcRenderer.invoke('attendance-set-break-duration', logId, minutes, userId),
-    setStatus: (logId: number, status: string, userId?: number) => 
+    setStatus: (logId: number, status: string, userId?: number) =>
       ipcRenderer.invoke('attendance-set-status', logId, status, userId),
-    bulkCreate: (records: any[], userId?: number) => 
+    bulkCreate: (records: any[], userId?: number) =>
       ipcRenderer.invoke('attendance-bulk-create', records, userId),
-    getMonthlyReport: (employeeId: number, month: number, year: number) => 
+    getMonthlyReport: (employeeId: number, month: number, year: number) =>
       ipcRenderer.invoke('attendance-get-monthly-report', employeeId, month, year),
   },
 
@@ -140,15 +140,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   overtime: {
     getAll: (options?: any) => ipcRenderer.invoke('overtime-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('overtime-get-by-id', id),
-    getByEmployee: (employeeId: number, dateRange?: any) => 
+    getByEmployee: (employeeId: number, dateRange?: any) =>
       ipcRenderer.invoke('overtime-get-by-employee', employeeId, dateRange),
     getPending: () => ipcRenderer.invoke('overtime-get-pending'),
     create: (data: any, userId?: number) => ipcRenderer.invoke('overtime-create', data, userId),
-    approve: (id: number, approverId: number, userId?: number) => 
+    approve: (id: number, approverId: number, userId?: number) =>
       ipcRenderer.invoke('overtime-approve', id, approverId, userId),
-    reject: (id: number, approverId: number, userId?: number) => 
+    reject: (id: number, approverId: number, userId?: number) =>
       ipcRenderer.invoke('overtime-reject', id, approverId, userId),
-    calculatePay: (id: number, hourlyRate: number) => 
+    calculatePay: (id: number, hourlyRate: number) =>
       ipcRenderer.invoke('overtime-calculate-pay', id, hourlyRate),
   },
 
@@ -172,19 +172,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getById: (id: number) => ipcRenderer.invoke('leave-request-get-by-id', id),
     getByEmployee: (employeeId: number) => ipcRenderer.invoke('leave-request-get-by-employee', employeeId),
     getPending: () => ipcRenderer.invoke('leave-request-get-pending'),
-    getByDateRange: (startDate: string, endDate: string) => 
+    getByDateRange: (startDate: string, endDate: string) =>
       ipcRenderer.invoke('leave-request-get-by-date-range', startDate, endDate),
     create: (data: any, userId?: number) => ipcRenderer.invoke('leave-request-create', data, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('leave-request-update', id, data, userId),
-    approve: (id: number, approverId: number, userId?: number) => 
+    approve: (id: number, approverId: number, userId?: number) =>
       ipcRenderer.invoke('leave-request-approve', id, approverId, userId),
-    reject: (id: number, approverId: number, userId?: number) => 
+    reject: (id: number, approverId: number, userId?: number) =>
       ipcRenderer.invoke('leave-request-reject', id, approverId, userId),
     cancel: (id: number, userId?: number) => ipcRenderer.invoke('leave-request-cancel', id, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('leave-request-delete', id, userId),
-    calculateDayCount: (startDate: string, endDate: string, isHalfDay?: boolean) => 
+    calculateDayCount: (startDate: string, endDate: string, isHalfDay?: boolean) =>
       ipcRenderer.invoke('leave-request-calculate-day-count', startDate, endDate, isHalfDay),
-    checkOverlap: (employeeId: number, startDate: string, endDate: string) => 
+    checkOverlap: (employeeId: number, startDate: string, endDate: string) =>
       ipcRenderer.invoke('leave-request-check-overlap', employeeId, startDate, endDate),
   },
 
@@ -195,18 +195,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get: (employeeId: number, year: number) => ipcRenderer.invoke('leave-balance-get', employeeId, year),
     getByEmployee: (employeeId: number) => ipcRenderer.invoke('leave-balance-get-by-employee', employeeId),
     getByYear: (year: number) => ipcRenderer.invoke('leave-balance-get-by-year', year),
-    create: (employeeId: number, year: number, userId?: number) => 
+    create: (employeeId: number, year: number, userId?: number) =>
       ipcRenderer.invoke('leave-balance-create', employeeId, year, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('leave-balance-update', id, data, userId),
-    deductDays: (employeeId: number, year: number, days: number, userId?: number) => 
+    deductDays: (employeeId: number, year: number, days: number, userId?: number) =>
       ipcRenderer.invoke('leave-balance-deduct-days', employeeId, year, days, userId),
-    addDays: (employeeId: number, year: number, days: number, userId?: number) => 
+    addDays: (employeeId: number, year: number, days: number, userId?: number) =>
       ipcRenderer.invoke('leave-balance-add-days', employeeId, year, days, userId),
-    transferToNextYear: (employeeId: number, fromYear: number, userId?: number) => 
+    transferToNextYear: (employeeId: number, fromYear: number, userId?: number) =>
       ipcRenderer.invoke('leave-balance-transfer-to-next-year', employeeId, fromYear, userId),
-    calculateEntitlement: (employeeId: number, year: number) => 
+    calculateEntitlement: (employeeId: number, year: number) =>
       ipcRenderer.invoke('leave-balance-calculate-entitlement', employeeId, year),
-    initializeYearly: (year: number, userId?: number) => 
+    initializeYearly: (year: number, userId?: number) =>
       ipcRenderer.invoke('leave-balance-initialize-yearly', year, userId),
   },
 
@@ -216,9 +216,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getById: (id: number) => ipcRenderer.invoke('salary-get-by-id', id),
     getCurrent: (employeeId: number) => ipcRenderer.invoke('salary-get-current', employeeId),
     getHistory: (employeeId: number) => ipcRenderer.invoke('salary-get-history', employeeId),
-    create: (employeeId: number, data: any, userId?: number) => 
+    create: (employeeId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('salary-create', employeeId, data, userId),
-    update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) => 
+    update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) =>
       ipcRenderer.invoke('salary-update', employeeId, newAmount, effectiveDate, userId),
   },
 
@@ -226,24 +226,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   payroll: {
     getAll: (options?: any) => ipcRenderer.invoke('payroll-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('payroll-get-by-id', id),
-    getByEmployeePeriod: (employeeId: number, periodMonth: number, periodYear: number) => 
+    getByEmployeePeriod: (employeeId: number, periodMonth: number, periodYear: number) =>
       ipcRenderer.invoke('payroll-get-by-employee-period', employeeId, periodMonth, periodYear),
-    getByEmployee: (employeeId: number, year?: number) => 
+    getByEmployee: (employeeId: number, year?: number) =>
       ipcRenderer.invoke('payroll-get-by-employee', employeeId, year),
-    getByPeriod: (periodMonth: number, periodYear: number) => 
+    getByPeriod: (periodMonth: number, periodYear: number) =>
       ipcRenderer.invoke('payroll-get-by-period', periodMonth, periodYear),
-    generate: (employeeId: number, periodMonth: number, periodYear: number, userId?: number) => 
+    generate: (employeeId: number, periodMonth: number, periodYear: number, userId?: number) =>
       ipcRenderer.invoke('payroll-generate', employeeId, periodMonth, periodYear, userId),
-    generateBulk: (periodMonth: number, periodYear: number, userId?: number) => 
+    generateBulk: (periodMonth: number, periodYear: number, userId?: number) =>
       ipcRenderer.invoke('payroll-generate-bulk', periodMonth, periodYear, userId),
     finalize: (payrollId: number, userId?: number) => ipcRenderer.invoke('payroll-finalize', payrollId, userId),
-    addItem: (payrollId: number, item: any, userId?: number) => 
+    addItem: (payrollId: number, item: any, userId?: number) =>
       ipcRenderer.invoke('payroll-add-item', payrollId, item, userId),
     removeItem: (itemId: number, userId?: number) => ipcRenderer.invoke('payroll-remove-item', itemId, userId),
     getItems: (payrollId: number) => ipcRenderer.invoke('payroll-get-items', payrollId),
-    getPeriodStatistics: (periodMonth: number, periodYear: number) => 
+    getPeriodStatistics: (periodMonth: number, periodYear: number) =>
       ipcRenderer.invoke('payroll-get-period-statistics', periodMonth, periodYear),
-    calculateNetSalary: (baseSalary: number, totalAdditions: number, totalDeductions: number) => 
+    calculateNetSalary: (baseSalary: number, totalAdditions: number, totalDeductions: number) =>
       ipcRenderer.invoke('payroll-calculate-net-salary', baseSalary, totalAdditions, totalDeductions),
   },
 
@@ -253,20 +253,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getById: (id: number) => ipcRenderer.invoke('advance-get-by-id', id),
     getByEmployee: (employeeId: number) => ipcRenderer.invoke('advance-get-by-employee', employeeId),
     getPending: () => ipcRenderer.invoke('advance-get-pending'),
-    getByDeductionPeriod: (deductionPeriod: string) => 
+    getByDeductionPeriod: (deductionPeriod: string) =>
       ipcRenderer.invoke('advance-get-by-deduction-period', deductionPeriod),
-    request: (employeeId: number, data: any, userId?: number) => 
+    request: (employeeId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('advance-request', employeeId, data, userId),
-    approve: (id: number, approverId: number, deductionPeriod: string, userId?: number) => 
+    approve: (id: number, approverId: number, deductionPeriod: string, userId?: number) =>
       ipcRenderer.invoke('advance-approve', id, approverId, deductionPeriod, userId),
-    reject: (id: number, approverId: number, userId?: number) => 
+    reject: (id: number, approverId: number, userId?: number) =>
       ipcRenderer.invoke('advance-reject', id, approverId, userId),
-    markAsPaid: (id: number, paymentDate: string, userId?: number) => 
+    markAsPaid: (id: number, paymentDate: string, userId?: number) =>
       ipcRenderer.invoke('advance-mark-as-paid', id, paymentDate, userId),
     markAsDeducted: (id: number, userId?: number) => ipcRenderer.invoke('advance-mark-as-deducted', id, userId),
     hasPending: (employeeId: number) => ipcRenderer.invoke('advance-has-pending', employeeId),
     getMaxAmount: (employeeId: number) => ipcRenderer.invoke('advance-get-max-amount', employeeId),
-    validateAmount: (employeeId: number, amount: number) => 
+    validateAmount: (employeeId: number, amount: number) =>
       ipcRenderer.invoke('advance-validate-amount', employeeId, amount),
   },
 
@@ -296,23 +296,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getCategories: () => ipcRenderer.invoke('training-get-categories'),
     getProviders: () => ipcRenderer.invoke('training-get-providers'),
     // Employee Training
-    assignEmployee: (trainingId: number, employeeId: number, userId?: number) => 
+    assignEmployee: (trainingId: number, employeeId: number, userId?: number) =>
       ipcRenderer.invoke('employee-training-assign', trainingId, employeeId, userId),
-    completeTraining: (employeeTrainingId: number, certificateUrl?: string, userId?: number) => 
+    completeTraining: (employeeTrainingId: number, certificateUrl?: string, userId?: number) =>
       ipcRenderer.invoke('employee-training-complete', employeeTrainingId, certificateUrl, userId),
-    failTraining: (employeeTrainingId: number, userId?: number) => 
+    failTraining: (employeeTrainingId: number, userId?: number) =>
       ipcRenderer.invoke('employee-training-fail', employeeTrainingId, userId),
-    removeEmployee: (employeeTrainingId: number, userId?: number) => 
+    removeEmployee: (employeeTrainingId: number, userId?: number) =>
       ipcRenderer.invoke('employee-training-remove', employeeTrainingId, userId),
     getEmployeeTrainingById: (id: number) => ipcRenderer.invoke('employee-training-get-by-id', id),
     getAllEmployeeTrainings: (options?: any) => ipcRenderer.invoke('employee-training-get-all', options),
-    getEmployeeTrainings: (employeeId: number) => 
+    getEmployeeTrainings: (employeeId: number) =>
       ipcRenderer.invoke('employee-training-get-by-employee', employeeId),
-    getTrainingParticipants: (trainingId: number) => 
+    getTrainingParticipants: (trainingId: number) =>
       ipcRenderer.invoke('employee-training-get-participants', trainingId),
-    getCompletedCount: (employeeId: number) => 
+    getCompletedCount: (employeeId: number) =>
       ipcRenderer.invoke('employee-training-completed-count', employeeId),
-    getPlannedCount: (employeeId: number) => 
+    getPlannedCount: (employeeId: number) =>
       ipcRenderer.invoke('employee-training-planned-count', employeeId),
   },
 
@@ -321,14 +321,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getAll: (options?: any) => ipcRenderer.invoke('disciplinary-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('disciplinary-get-by-id', id),
     getByEmployee: (employeeId: number) => ipcRenderer.invoke('disciplinary-get-by-employee', employeeId),
-    getByViolationType: (violationType: string) => 
+    getByViolationType: (violationType: string) =>
       ipcRenderer.invoke('disciplinary-get-by-violation-type', violationType),
-    getByActionTaken: (actionTaken: string) => 
+    getByActionTaken: (actionTaken: string) =>
       ipcRenderer.invoke('disciplinary-get-by-action-taken', actionTaken),
-    getByDateRange: (startDate: string, endDate: string) => 
+    getByDateRange: (startDate: string, endDate: string) =>
       ipcRenderer.invoke('disciplinary-get-by-date-range', startDate, endDate),
     getSalaryDeductions: () => ipcRenderer.invoke('disciplinary-get-salary-deductions'),
-    getCountByEmployee: (employeeId: number) => 
+    getCountByEmployee: (employeeId: number) =>
       ipcRenderer.invoke('disciplinary-get-count-by-employee', employeeId),
     create: (data: any, userId?: number) => ipcRenderer.invoke('disciplinary-create', data, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('disciplinary-update', id, data, userId),
@@ -340,30 +340,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Resignation
     getAllResignations: (options?: any) => ipcRenderer.invoke('resignation-get-all', options),
     getResignationById: (id: number) => ipcRenderer.invoke('resignation-get-by-id', id),
-    getResignationByEmployee: (employeeId: number) => 
+    getResignationByEmployee: (employeeId: number) =>
       ipcRenderer.invoke('resignation-get-by-employee', employeeId),
     getPendingResignations: () => ipcRenderer.invoke('resignation-get-pending'),
     createResignation: (data: any, userId?: number) => ipcRenderer.invoke('resignation-create', data, userId),
-    updateResignation: (id: number, data: any, userId?: number) => 
+    updateResignation: (id: number, data: any, userId?: number) =>
       ipcRenderer.invoke('resignation-update', id, data, userId),
-    approveResignation: (id: number, lastWorkingDay?: string, userId?: number) => 
+    approveResignation: (id: number, lastWorkingDay?: string, userId?: number) =>
       ipcRenderer.invoke('resignation-approve', id, lastWorkingDay, userId),
-    completeResignation: (id: number, userId?: number) => 
+    completeResignation: (id: number, userId?: number) =>
       ipcRenderer.invoke('resignation-complete', id, userId),
     deleteResignation: (id: number, userId?: number) => ipcRenderer.invoke('resignation-delete', id, userId),
     // Exit Interview
     getAllExitInterviews: () => ipcRenderer.invoke('exit-interview-get-all'),
     getExitInterviewById: (id: number) => ipcRenderer.invoke('exit-interview-get-by-id', id),
-    getExitInterviewByResignation: (resignationId: number) => 
+    getExitInterviewByResignation: (resignationId: number) =>
       ipcRenderer.invoke('exit-interview-get-by-resignation', resignationId),
-    createExitInterview: (resignationId: number, data: any, userId?: number) => 
+    createExitInterview: (resignationId: number, data: any, userId?: number) =>
       ipcRenderer.invoke('exit-interview-create', resignationId, data, userId),
-    updateExitInterview: (id: number, data: any, userId?: number) => 
+    updateExitInterview: (id: number, data: any, userId?: number) =>
       ipcRenderer.invoke('exit-interview-update', id, data, userId),
-    deleteExitInterview: (id: number, userId?: number) => 
+    deleteExitInterview: (id: number, userId?: number) =>
       ipcRenderer.invoke('exit-interview-delete', id, userId),
     // Settlement
-    calculateFinalSettlement: (resignationId: number) => 
+    calculateFinalSettlement: (resignationId: number) =>
       ipcRenderer.invoke('offboarding-calculate-settlement', resignationId),
   },
 
@@ -371,18 +371,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   salaryParameter: {
     getAll: (options?: any) => ipcRenderer.invoke('salary-parameter-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('salary-parameter-get-by-id', id),
-    getByYearAndType: (year: number, parameterType: string, month?: number) => 
+    getByYearAndType: (year: number, parameterType: string, month?: number) =>
       ipcRenderer.invoke('salary-parameter-get-by-year-type', year, parameterType, month),
     create: (data: any, userId?: number) => ipcRenderer.invoke('salary-parameter-create', data, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('salary-parameter-update', id, data, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('salary-parameter-delete', id, userId),
-    getMinimumWage: (year: number, month?: number) => 
+    getMinimumWage: (year: number, month?: number) =>
       ipcRenderer.invoke('salary-parameter-get-minimum-wage', year, month),
     getTaxBrackets: (year: number) => ipcRenderer.invoke('salary-parameter-get-tax-brackets', year),
     getSGKRates: (year: number) => ipcRenderer.invoke('salary-parameter-get-sgk-rates', year),
-    seedDefaults: (year: number, userId?: number) => 
+    seedDefaults: (year: number, userId?: number) =>
       ipcRenderer.invoke('salary-parameter-seed-defaults', year, userId),
-    copyFromYear: (sourceYear: number, targetYear: number, userId?: number) => 
+    copyFromYear: (sourceYear: number, targetYear: number, userId?: number) =>
       ipcRenderer.invoke('salary-parameter-copy-from-year', sourceYear, targetYear, userId),
   },
 
@@ -390,13 +390,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   employeeAllowance: {
     getAll: (options?: any) => ipcRenderer.invoke('employee-allowance-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('employee-allowance-get-by-id', id),
-    getByEmployee: (employeeId: number, activeOnly?: boolean) => 
+    getByEmployee: (employeeId: number, activeOnly?: boolean) =>
       ipcRenderer.invoke('employee-allowance-get-by-employee', employeeId, activeOnly),
     create: (data: any, userId?: number) => ipcRenderer.invoke('employee-allowance-create', data, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('employee-allowance-update', id, data, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('employee-allowance-delete', id, userId),
     toggleActive: (id: number, userId?: number) => ipcRenderer.invoke('employee-allowance-toggle-active', id, userId),
-    calculateTotals: (employeeId: number, baseSalary: number) => 
+    calculateTotals: (employeeId: number, baseSalary: number) =>
       ipcRenderer.invoke('employee-allowance-calculate-totals', employeeId, baseSalary),
   },
 
@@ -404,19 +404,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   paymentHistory: {
     getAll: (options?: any) => ipcRenderer.invoke('payment-history-get-all', options),
     getById: (id: number) => ipcRenderer.invoke('payment-history-get-by-id', id),
-    getByEmployee: (employeeId: number, year?: number) => 
+    getByEmployee: (employeeId: number, year?: number) =>
       ipcRenderer.invoke('payment-history-get-by-employee', employeeId, year),
     create: (data: any, userId?: number) => ipcRenderer.invoke('payment-history-create', data, userId),
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('payment-history-update', id, data, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('payment-history-delete', id, userId),
     cancel: (id: number, userId?: number) => ipcRenderer.invoke('payment-history-cancel', id, userId),
-    getStatistics: (startDate?: string, endDate?: string) => 
+    getStatistics: (startDate?: string, endDate?: string) =>
       ipcRenderer.invoke('payment-history-get-statistics', startDate, endDate),
-    getEmployeeSummary: (employeeId: number, year: number) => 
+    getEmployeeSummary: (employeeId: number, year: number) =>
       ipcRenderer.invoke('payment-history-get-employee-summary', employeeId, year),
-    recordSalaryPayment: (employeeId: number, payrollId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) => 
+    recordSalaryPayment: (employeeId: number, payrollId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) =>
       ipcRenderer.invoke('payment-history-record-salary', employeeId, payrollId, amount, paymentMethod, bankDetails, userId),
-    recordAdvancePayment: (employeeId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) => 
+    recordAdvancePayment: (employeeId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) =>
       ipcRenderer.invoke('payment-history-record-advance', employeeId, amount, paymentMethod, bankDetails, userId),
   },
 
@@ -425,11 +425,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get: (key: string) => ipcRenderer.invoke('settings-get', key),
     getNumber: (key: string) => ipcRenderer.invoke('settings-get-number', key),
     getBoolean: (key: string) => ipcRenderer.invoke('settings-get-boolean', key),
-    set: (key: string, value: string, group?: string, userId?: number) => 
+    set: (key: string, value: string, group?: string, userId?: number) =>
       ipcRenderer.invoke('settings-set', key, value, group, userId),
-    setNumber: (key: string, value: number, group?: string, userId?: number) => 
+    setNumber: (key: string, value: number, group?: string, userId?: number) =>
       ipcRenderer.invoke('settings-set-number', key, value, group, userId),
-    setBoolean: (key: string, value: boolean, group?: string, userId?: number) => 
+    setBoolean: (key: string, value: boolean, group?: string, userId?: number) =>
       ipcRenderer.invoke('settings-set-boolean', key, value, group, userId),
     getByGroup: (group: string) => ipcRenderer.invoke('settings-get-by-group', group),
     getAll: () => ipcRenderer.invoke('settings-get-all'),

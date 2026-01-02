@@ -13,7 +13,7 @@ export function useToast() {
   const showToast = (message: string, type: Toast['type'] = 'info', duration = 4000) => {
     const id = ++toastId
     toasts.value.push({ id, message, type })
-    
+
     if (duration > 0) {
       setTimeout(() => {
         removeToast(id)

@@ -347,7 +347,7 @@ const loadMaxAmount = async () => {
   try {
     const result = await window.electronAPI.advance.getMaxAmount(Number(form.employeeId))
     if (result.success) {
-      maxAmount.value = result.data?.maxAmount || 0
+      maxAmount.value = (result.data as any)?.maxAmount ?? result.data ?? 0
     }
   } catch (err) {
     console.error('Max tutar alınamadı:', err)
@@ -524,7 +524,7 @@ const formatPeriod = (period: string) => {
   if (!period) return '-'
   const [year, month] = period.split('-')
   const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-  return `${months[parseInt(month) - 1]} ${year}`
+  return `${months[parseInt(month || '0') - 1]} ${year}`
 }
 
 const getStatusClass = (status: string) => {

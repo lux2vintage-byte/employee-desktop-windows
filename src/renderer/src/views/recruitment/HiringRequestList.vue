@@ -280,7 +280,7 @@ const loadPositions = async () => {
   if (!form.departmentId) return
   try {
     const result = await window.electronAPI.position.getByDepartment(form.departmentId)
-    if (result.success) positions.value = result.data
+    if (result.success) positions.value = result.data || []
   } catch (error) { /* ignore */ }
 }
 

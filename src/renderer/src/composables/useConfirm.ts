@@ -6,7 +6,7 @@ interface ConfirmState {
   message: string
   confirmText: string
   cancelText: string
-  type: 'danger' | 'warning' | 'info'
+  type: 'danger' | 'warning' | 'info' | 'success'
   resolve: ((value: boolean) => void) | null
 }
 
@@ -26,7 +26,7 @@ export function useConfirm() {
     message: string
     confirmText?: string
     cancelText?: string
-    type?: 'danger' | 'warning' | 'info'
+    type?: 'danger' | 'warning' | 'info' | 'success'
   }): Promise<boolean> => {
     return new Promise((resolve) => {
       state.title = options.title

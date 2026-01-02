@@ -95,7 +95,7 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
     // Filtreler
     if (employeeId) whereClause.employeeId = employeeId
     if (status) whereClause.status = status
-    
+
     // Tarih aralığı filtresi
     if (startDate || endDate) {
       whereClause.date = {}
@@ -305,8 +305,8 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
         const data = {
           employeeId: record.employeeId,
           date: normalizedDate,
-          checkInTime: record.checkInTime || null,
-          checkOutTime: record.checkOutTime || null,
+          checkInTime: record.checkInTime ? new Date(record.checkInTime) : null,
+          checkOutTime: record.checkOutTime ? new Date(record.checkOutTime) : null,
           breakDuration: record.breakDuration || 0,
           status: record.status || 'Geldi',
           dailyNote: record.dailyNote || null
@@ -318,6 +318,8 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
         // Audit log
         await this.logAudit('INSERT', created.id, undefined, this.toPlain(created), userId)
       }
+    }, {
+      timeout: 20000 // 20 saniye timeout (varsayılan 5000ms yetersiz kalabilir)
     })
 
     return this.toPlain(createdRecords)

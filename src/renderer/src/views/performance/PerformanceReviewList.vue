@@ -186,7 +186,7 @@
                   <label>Puan (0-100)</label>
                   <div class="score-input-wrapper">
                     <input v-model.number="form.score" type="number" min="0" max="100" class="form-control" placeholder="0-100" />
-                    <div class="score-preview" v-if="form.score !== null && form.score !== ''">
+                    <div class="score-preview" v-if="form.score !== null">
                       <div class="preview-bar">
                         <div class="bar-fill" :class="getScoreClass(form.score)" :style="{ width: form.score + '%' }"></div>
                       </div>

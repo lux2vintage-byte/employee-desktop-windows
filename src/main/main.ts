@@ -30,6 +30,12 @@ import { setupEmployeeAllowanceHandlers } from './ipc/employee-allowance-handler
 import { setupPaymentHistoryHandlers } from './ipc/payment-history-handlers'
 import { setupReportHandlers } from './ipc/report-handlers'
 
+// GPU hatalarını önlemek için GPU'yu devre dışı bırak
+app.disableHardwareAcceleration()
+
+// GPU process hatalarını önlemek için ek ayarlar
+app.commandLine.appendSwitch('disable-software-rasterizer')
+
 // Geliştirme modu kontrolü - NODE_ENV veya ELECTRON_ENV'den oku
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_ENV === 'development'
 const isProduction = !isDev

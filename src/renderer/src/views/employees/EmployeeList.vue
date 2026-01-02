@@ -208,7 +208,7 @@ const loadStats = async () => {
     // Toplam aktif personel
     const activeResult = await window.electronAPI.employee.getActiveCount()
     if (activeResult.success) {
-      stats.active = activeResult.data.count
+      stats.active = activeResult.data?.count || 0
     }
 
     // Tüm personeller için istatistik

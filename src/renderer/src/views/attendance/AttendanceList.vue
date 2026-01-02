@@ -252,7 +252,7 @@ const columns: TableColumn[] = [
 const loadAttendance = async () => {
   loading.value = true
   try {
-    const result = await window.electronAPI.attendance.getByDate(selectedDate.value)
+    const result = await window.electronAPI.attendance.getByDate(selectedDate.value || '')
     if (result.success) {
       let records = result.data || []
       

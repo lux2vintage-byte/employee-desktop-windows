@@ -78,6 +78,7 @@ export interface Employee {
   hireDate: string;
   contractType: 'Süreli' | 'Süresiz' | 'Stajyer' | 'Freelance';
   status: 'Active' | 'Passive' | 'OnLeave' | 'Terminated';
+  decryptedIdentityNumber?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -209,6 +210,7 @@ export interface Payroll {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  items?: PayrollItem[];
 }
 
 export interface PayrollItem {
@@ -445,6 +447,12 @@ export interface AppSetting {
 declare global {
   interface Window {
     electronAPI: {
+      // Pencere ve Uygulama Yönetimi
+      minimizeApp: () => Promise<void>;
+      maximizeApp: () => Promise<void>;
+      closeApp: () => Promise<void>;
+      getAppVersion: () => Promise<string>;
+
       // Veritabanı işlemleri
       databaseOperation: (operation: any) => Promise<any>;
       healthCheck: () => Promise<boolean>;
@@ -531,25 +539,25 @@ declare global {
         getByDepartment: (departmentId: number) => Promise<ApiResponse<Employee[]>>;
         getByManager: (managerId: number) => Promise<ApiResponse<Employee[]>>;
         changeStatus: (id: number, status: string, userId?: number) => Promise<ApiResponse<Employee>>;
-        generateCode: () => Promise<ApiResponse<string>>;
+        generateCode: () => Promise<ApiResponse<{ employeeCode: string }>>;
         searchByName: (searchTerm: string) => Promise<ApiResponse<Employee[]>>;
         getActiveCount: () => Promise<ApiResponse<{ count: number }>>;
       };
 
       // Personel detay işlemleri
       employeeDetails: {
-        getByEmployeeId: (employeeId: number) => Promise<EmployeeDetails | null>;
-        getDecrypted: (employeeId: number) => Promise<EmployeeDetails | null>;
-        create: (employeeId: number, data: any, userId?: number) => Promise<EmployeeDetails>;
-        update: (employeeId: number, data: any, userId?: number) => Promise<EmployeeDetails>;
+        getByEmployeeId: (employeeId: number) => Promise<ApiResponse<EmployeeDetails | null>>;
+        getDecrypted: (employeeId: number) => Promise<ApiResponse<EmployeeDetails | null>>;
+        create: (employeeId: number, data: any, userId?: number) => Promise<ApiResponse<EmployeeDetails>>;
+        update: (employeeId: number, data: any, userId?: number) => Promise<ApiResponse<EmployeeDetails>>;
       };
 
       // Personel belge işlemleri
       employeeDocuments: {
-        getByEmployeeId: (employeeId: number) => Promise<EmployeeDocument[]>;
-        getByType: (employeeId: number, documentType: string) => Promise<EmployeeDocument[]>;
-        upload: (employeeId: number, data: any, userId?: number) => Promise<EmployeeDocument>;
-        delete: (documentId: number, userId?: number) => Promise<void>;
+        getByEmployeeId: (employeeId: number) => Promise<ApiResponse<EmployeeDocument[]>>;
+        getByType: (employeeId: number, documentType: string) => Promise<ApiResponse<EmployeeDocument[]>>;
+        upload: (employeeId: number, data: any, userId?: number) => Promise<ApiResponse<EmployeeDocument>>;
+        delete: (documentId: number, userId?: number) => Promise<ApiResponse<void>>;
       };
 
       // Devamlılık/Puantaj işlemleri
@@ -582,107 +590,107 @@ declare global {
       // İzin türü işlemleri
       leaveType: {
         getAll: (options?: any) => Promise<PaginatedResult<LeaveType>>;
-        getById: (id: number) => Promise<LeaveType | null>;
-        getByName: (name: string) => Promise<LeaveType | null>;
-        getPaid: () => Promise<LeaveType[]>;
-        getUnpaid: () => Promise<LeaveType[]>;
-        getDeducting: () => Promise<LeaveType[]>;
-        create: (data: any, userId?: number) => Promise<LeaveType>;
-        update: (id: number, data: any, userId?: number) => Promise<LeaveType>;
-        delete: (id: number, userId?: number) => Promise<LeaveType>;
-        seedDefaults: (userId?: number) => Promise<LeaveType[]>;
+        getById: (id: number) => Promise<ApiResponse<LeaveType | null>>;
+        getByName: (name: string) => Promise<ApiResponse<LeaveType | null>>;
+        getPaid: () => Promise<ApiResponse<LeaveType[]>>;
+        getUnpaid: () => Promise<ApiResponse<LeaveType[]>>;
+        getDeducting: () => Promise<ApiResponse<LeaveType[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<LeaveType>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<LeaveType>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<LeaveType>>;
+        seedDefaults: (userId?: number) => Promise<ApiResponse<LeaveType[]>>;
       };
 
       // İzin talebi işlemleri
       leaveRequest: {
         getAll: (options?: any) => Promise<PaginatedResult<LeaveRequest>>;
-        getById: (id: number) => Promise<LeaveRequest | null>;
-        getByEmployee: (employeeId: number) => Promise<LeaveRequest[]>;
-        getPending: () => Promise<LeaveRequest[]>;
-        getByDateRange: (startDate: string, endDate: string) => Promise<LeaveRequest[]>;
-        create: (data: any, userId?: number) => Promise<LeaveRequest>;
-        update: (id: number, data: any, userId?: number) => Promise<LeaveRequest>;
-        approve: (id: number, approverId: number, userId?: number) => Promise<LeaveRequest>;
-        reject: (id: number, approverId: number, userId?: number) => Promise<LeaveRequest>;
-        cancel: (id: number, userId?: number) => Promise<LeaveRequest>;
-        delete: (id: number, userId?: number) => Promise<LeaveRequest>;
-        calculateDayCount: (startDate: string, endDate: string, isHalfDay?: boolean) => Promise<number>;
-        checkOverlap: (employeeId: number, startDate: string, endDate: string) => Promise<boolean>;
+        getById: (id: number) => Promise<ApiResponse<LeaveRequest | null>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<LeaveRequest[]>>;
+        getPending: () => Promise<ApiResponse<LeaveRequest[]>>;
+        getByDateRange: (startDate: string, endDate: string) => Promise<ApiResponse<LeaveRequest[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        approve: (id: number, approverId: number, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        reject: (id: number, approverId: number, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        cancel: (id: number, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<LeaveRequest>>;
+        calculateDayCount: (startDate: string, endDate: string, isHalfDay?: boolean) => Promise<ApiResponse<number>>;
+        checkOverlap: (employeeId: number, startDate: string, endDate: string) => Promise<ApiResponse<boolean>>;
       };
 
       // İzin bakiyesi işlemleri
       leaveBalance: {
         getAll: (options?: any) => Promise<PaginatedResult<LeaveBalance>>;
-        getById: (id: number) => Promise<LeaveBalance | null>;
-        get: (employeeId: number, year: number) => Promise<LeaveBalance | null>;
-        getByEmployee: (employeeId: number) => Promise<LeaveBalance[]>;
-        getByYear: (year: number) => Promise<LeaveBalance[]>;
-        create: (employeeId: number, year: number, userId?: number) => Promise<LeaveBalance>;
-        update: (id: number, data: any, userId?: number) => Promise<LeaveBalance>;
-        deductDays: (employeeId: number, year: number, days: number, userId?: number) => Promise<LeaveBalance>;
-        addDays: (employeeId: number, year: number, days: number, userId?: number) => Promise<LeaveBalance>;
-        transferToNextYear: (employeeId: number, fromYear: number, userId?: number) => Promise<LeaveBalance>;
-        calculateEntitlement: (employeeId: number, year: number) => Promise<number>;
-        initializeYearly: (year: number, userId?: number) => Promise<LeaveBalance[]>;
+        getById: (id: number) => Promise<ApiResponse<LeaveBalance | null>>;
+        get: (employeeId: number, year: number) => Promise<ApiResponse<LeaveBalance | null>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<LeaveBalance[]>>;
+        getByYear: (year: number) => Promise<ApiResponse<LeaveBalance[]>>;
+        create: (employeeId: number, year: number, userId?: number) => Promise<ApiResponse<LeaveBalance>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<LeaveBalance>>;
+        deductDays: (employeeId: number, year: number, days: number, userId?: number) => Promise<ApiResponse<LeaveBalance>>;
+        addDays: (employeeId: number, year: number, days: number, userId?: number) => Promise<ApiResponse<LeaveBalance>>;
+        transferToNextYear: (employeeId: number, fromYear: number, userId?: number) => Promise<ApiResponse<LeaveBalance>>;
+        calculateEntitlement: (employeeId: number, year: number) => Promise<ApiResponse<number>>;
+        initializeYearly: (year: number, userId?: number) => Promise<ApiResponse<LeaveBalance[]>>;
       };
 
       // Maaş geçmişi işlemleri
       salary: {
         getAll: (options?: any) => Promise<PaginatedResult<SalaryHistory>>;
-        getById: (id: number) => Promise<SalaryHistory | null>;
-        getCurrent: (employeeId: number) => Promise<SalaryHistory | null>;
-        getHistory: (employeeId: number) => Promise<SalaryHistory[]>;
-        create: (employeeId: number, data: any, userId?: number) => Promise<SalaryHistory>;
-        update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) => Promise<SalaryHistory>;
+        getById: (id: number) => Promise<ApiResponse<SalaryHistory | null>>;
+        getCurrent: (employeeId: number) => Promise<ApiResponse<SalaryHistory | null>>;
+        getHistory: (employeeId: number) => Promise<ApiResponse<SalaryHistory[]>>;
+        create: (employeeId: number, data: any, userId?: number) => Promise<ApiResponse<SalaryHistory>>;
+        update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) => Promise<ApiResponse<SalaryHistory>>;
       };
 
 
       // Bordro işlemleri
       payroll: {
         getAll: (options?: any) => Promise<PaginatedResult<Payroll>>;
-        getById: (id: number) => Promise<Payroll | null>;
-        getByEmployeePeriod: (employeeId: number, periodMonth: number, periodYear: number) => Promise<Payroll | null>;
-        getByEmployee: (employeeId: number, year?: number) => Promise<Payroll[]>;
-        getByPeriod: (periodMonth: number, periodYear: number) => Promise<Payroll[]>;
-        generate: (employeeId: number, periodMonth: number, periodYear: number, userId?: number) => Promise<Payroll>;
-        generateBulk: (periodMonth: number, periodYear: number, userId?: number) => Promise<Payroll[]>;
-        finalize: (payrollId: number, userId?: number) => Promise<Payroll>;
-        addItem: (payrollId: number, item: any, userId?: number) => Promise<PayrollItem>;
-        removeItem: (itemId: number, userId?: number) => Promise<void>;
-        getItems: (payrollId: number) => Promise<PayrollItem[]>;
-        getPeriodStatistics: (periodMonth: number, periodYear: number) => Promise<any>;
-        calculateNetSalary: (baseSalary: number, totalAdditions: number, totalDeductions: number) => Promise<number>;
+        getById: (id: number) => Promise<ApiResponse<Payroll | null>>;
+        getByEmployeePeriod: (employeeId: number, periodMonth: number, periodYear: number) => Promise<ApiResponse<Payroll | null>>;
+        getByEmployee: (employeeId: number, year?: number) => Promise<ApiResponse<Payroll[]>>;
+        getByPeriod: (periodMonth: number, periodYear: number) => Promise<ApiResponse<Payroll[]>>;
+        generate: (employeeId: number, periodMonth: number, periodYear: number, userId?: number) => Promise<ApiResponse<Payroll>>;
+        generateBulk: (periodMonth: number, periodYear: number, userId?: number) => Promise<ApiResponse<Payroll[]>>;
+        finalize: (payrollId: number, userId?: number) => Promise<ApiResponse<Payroll>>;
+        addItem: (payrollId: number, item: any, userId?: number) => Promise<ApiResponse<PayrollItem>>;
+        removeItem: (itemId: number, userId?: number) => Promise<ApiResponse<void>>;
+        getItems: (payrollId: number) => Promise<ApiResponse<PayrollItem[]>>;
+        getPeriodStatistics: (periodMonth: number, periodYear: number) => Promise<ApiResponse<any>>;
+        calculateNetSalary: (baseSalary: number, totalAdditions: number, totalDeductions: number) => Promise<ApiResponse<number>>;
       };
 
       // Avans işlemleri
       advance: {
         getAll: (options?: any) => Promise<PaginatedResult<SalaryAdvance>>;
-        getById: (id: number) => Promise<SalaryAdvance | null>;
-        getByEmployee: (employeeId: number) => Promise<SalaryAdvance[]>;
-        getPending: () => Promise<SalaryAdvance[]>;
-        getByDeductionPeriod: (deductionPeriod: string) => Promise<SalaryAdvance[]>;
-        request: (employeeId: number, data: any, userId?: number) => Promise<SalaryAdvance>;
-        approve: (id: number, approverId: number, deductionPeriod: string, userId?: number) => Promise<SalaryAdvance>;
-        reject: (id: number, approverId: number, userId?: number) => Promise<SalaryAdvance>;
-        markAsPaid: (id: number, paymentDate: string, userId?: number) => Promise<SalaryAdvance>;
-        markAsDeducted: (id: number, userId?: number) => Promise<SalaryAdvance>;
-        hasPending: (employeeId: number) => Promise<boolean>;
-        getMaxAmount: (employeeId: number) => Promise<number>;
-        validateAmount: (employeeId: number, amount: number) => Promise<boolean>;
+        getById: (id: number) => Promise<ApiResponse<SalaryAdvance | null>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<SalaryAdvance[]>>;
+        getPending: () => Promise<ApiResponse<SalaryAdvance[]>>;
+        getByDeductionPeriod: (deductionPeriod: string) => Promise<ApiResponse<SalaryAdvance[]>>;
+        request: (employeeId: number, data: any, userId?: number) => Promise<ApiResponse<SalaryAdvance>>;
+        approve: (id: number, approverId: number, deductionPeriod: string, userId?: number) => Promise<ApiResponse<SalaryAdvance>>;
+        reject: (id: number, approverId: number, userId?: number) => Promise<ApiResponse<SalaryAdvance>>;
+        markAsPaid: (id: number, paymentDate: string, userId?: number) => Promise<ApiResponse<SalaryAdvance>>;
+        markAsDeducted: (id: number, userId?: number) => Promise<ApiResponse<SalaryAdvance>>;
+        hasPending: (employeeId: number) => Promise<ApiResponse<boolean>>;
+        getMaxAmount: (employeeId: number) => Promise<ApiResponse<number>>;
+        validateAmount: (employeeId: number, amount: number) => Promise<ApiResponse<boolean>>;
       };
 
       // Performans değerlendirme işlemleri
       performance: {
         getAll: (options?: any) => Promise<PaginatedResult<PerformanceReview>>;
-        getById: (id: number) => Promise<PerformanceReview | null>;
-        getByEmployee: (employeeId: number) => Promise<PerformanceReview[]>;
-        getByReviewer: (reviewerId: number) => Promise<PerformanceReview[]>;
-        getByPeriod: (period: string) => Promise<PerformanceReview[]>;
-        create: (data: any, userId?: number) => Promise<PerformanceReview>;
-        update: (id: number, data: any, userId?: number) => Promise<PerformanceReview>;
-        submit: (id: number, userId?: number) => Promise<PerformanceReview>;
-        acknowledge: (id: number, userId?: number) => Promise<PerformanceReview>;
-        delete: (id: number, userId?: number) => Promise<PerformanceReview>;
+        getById: (id: number) => Promise<ApiResponse<PerformanceReview | null>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<PerformanceReview[]>>;
+        getByReviewer: (reviewerId: number) => Promise<ApiResponse<PerformanceReview[]>>;
+        getByPeriod: (period: string) => Promise<ApiResponse<PerformanceReview[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<PerformanceReview>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<PerformanceReview>>;
+        submit: (id: number, userId?: number) => Promise<ApiResponse<PerformanceReview>>;
+        acknowledge: (id: number, userId?: number) => Promise<ApiResponse<PerformanceReview>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<PerformanceReview>>;
       };
 
       // Eğitim işlemleri
@@ -728,23 +736,60 @@ declare global {
       offboarding: {
         // Resignation
         getAllResignations: (options?: any) => Promise<PaginatedResult<Resignation>>;
-        getResignationById: (id: number) => Promise<Resignation | null>;
-        getResignationByEmployee: (employeeId: number) => Promise<Resignation | null>;
-        getPendingResignations: () => Promise<Resignation[]>;
-        createResignation: (data: any, userId?: number) => Promise<Resignation>;
-        updateResignation: (id: number, data: any, userId?: number) => Promise<Resignation>;
-        approveResignation: (id: number, lastWorkingDay?: string, userId?: number) => Promise<Resignation>;
-        completeResignation: (id: number, userId?: number) => Promise<Resignation>;
-        deleteResignation: (id: number, userId?: number) => Promise<Resignation>;
+        getResignationById: (id: number) => Promise<ApiResponse<Resignation | null>>;
+        getResignationByEmployee: (employeeId: number) => Promise<ApiResponse<Resignation | null>>;
+        getPendingResignations: () => Promise<ApiResponse<Resignation[]>>;
+        createResignation: (data: any, userId?: number) => Promise<ApiResponse<Resignation>>;
+        updateResignation: (id: number, data: any, userId?: number) => Promise<ApiResponse<Resignation>>;
+        approveResignation: (id: number, lastWorkingDay?: string, userId?: number) => Promise<ApiResponse<Resignation>>;
+        completeResignation: (id: number, userId?: number) => Promise<ApiResponse<Resignation>>;
+        deleteResignation: (id: number, userId?: number) => Promise<ApiResponse<Resignation>>;
         // Exit Interview
-        getAllExitInterviews: () => Promise<ExitInterview[]>;
-        getExitInterviewById: (id: number) => Promise<ExitInterview | null>;
-        getExitInterviewByResignation: (resignationId: number) => Promise<ExitInterview | null>;
-        createExitInterview: (resignationId: number, data: any, userId?: number) => Promise<ExitInterview>;
-        updateExitInterview: (id: number, data: any, userId?: number) => Promise<ExitInterview>;
-        deleteExitInterview: (id: number, userId?: number) => Promise<ExitInterview>;
+        getAllExitInterviews: () => Promise<ApiResponse<ExitInterview[]>>;
+        getExitInterviewById: (id: number) => Promise<ApiResponse<ExitInterview | null>>;
+        getExitInterviewByResignation: (resignationId: number) => Promise<ApiResponse<ExitInterview | null>>;
+        createExitInterview: (resignationId: number, data: any, userId?: number) => Promise<ApiResponse<ExitInterview>>;
+        updateExitInterview: (id: number, data: any, userId?: number) => Promise<ApiResponse<ExitInterview>>;
+        deleteExitInterview: (id: number, userId?: number) => Promise<ApiResponse<ExitInterview>>;
         // Settlement
-        calculateFinalSettlement: (resignationId: number) => Promise<FinalSettlement>;
+        calculateFinalSettlement: (resignationId: number) => Promise<ApiResponse<FinalSettlement>>;
+      };
+
+      // İşe alım talepleri işlemleri
+      hiringRequest: {
+        getAll: (options?: any) => Promise<PaginatedResult<HiringRequest>>;
+        getById: (id: number) => Promise<ApiResponse<HiringRequest | null>>;
+        getByStatus: (status: string) => Promise<ApiResponse<HiringRequest[]>>;
+        getByDepartment: (departmentId: number) => Promise<ApiResponse<HiringRequest[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        approve: (id: number, approverId: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        reject: (id: number, approverId: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        start: (id: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        complete: (id: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        cancel: (id: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<HiringRequest>>;
+        getStats: () => Promise<ApiResponse<any>>;
+      };
+
+      // Oryantasyon işlemleri
+      onboarding: {
+        getAll: (options?: any) => Promise<PaginatedResult<Onboarding>>;
+        getById: (id: number) => Promise<ApiResponse<Onboarding | null>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<Onboarding | null>>;
+        getByStatus: (status: string) => Promise<ApiResponse<Onboarding[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        createWithTasks: (data: any, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        start: (id: number, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        complete: (id: number, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        cancel: (id: number, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<Onboarding>>;
+        addTask: (onboardingId: number, data: any) => Promise<ApiResponse<OnboardingTask>>;
+        updateTask: (taskId: number, data: any) => Promise<ApiResponse<OnboardingTask>>;
+        completeTask: (taskId: number) => Promise<ApiResponse<OnboardingTask>>;
+        deleteTask: (taskId: number) => Promise<ApiResponse<void>>;
+        getStats: () => Promise<ApiResponse<any>>;
       };
 
       // Maaş parametreleri işlemleri
@@ -789,62 +834,30 @@ declare global {
         recordAdvancePayment: (employeeId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) => Promise<ApiResponse<PaymentHistory>>;
       };
 
+      // Şirket bilgileri işlemleri
+      companyInfo: {
+        get: () => Promise<ApiResponse<any>>;
+        update: (data: any) => Promise<ApiResponse<any>>;
+        updateGeneral: (data: any) => Promise<ApiResponse<any>>;
+        updateContact: (data: any) => Promise<ApiResponse<any>>;
+        updateTax: (data: any) => Promise<ApiResponse<any>>;
+        updateBank: (data: any) => Promise<ApiResponse<any>>;
+        updateLogo: (data: any) => Promise<ApiResponse<any>>;
+      };
+
       // Sistem ayarları işlemleri
       settings: {
-        get: (key: string) => Promise<string | null>;
-        getNumber: (key: string) => Promise<number | null>;
-        getBoolean: (key: string) => Promise<boolean | null>;
-        set: (key: string, value: string, group?: string, userId?: number) => Promise<AppSetting>;
-        setNumber: (key: string, value: number, group?: string, userId?: number) => Promise<AppSetting>;
-        setBoolean: (key: string, value: boolean, group?: string, userId?: number) => Promise<AppSetting>;
-        getByGroup: (group: string) => Promise<AppSetting[]>;
-        getAll: () => Promise<AppSetting[]>;
-        getAllGroups: () => Promise<string[]>;
-        delete: (key: string, userId?: number) => Promise<AppSetting | null>;
-        seedDefaults: (userId?: number) => Promise<number>;
-      };
-
-      // Uygulama işlemleri
-      getAppVersion: () => Promise<string>;
-      closeApp: () => Promise<void>;
-      minimizeApp: () => Promise<void>;
-      maximizeApp: () => Promise<void>;
-
-      // İşe alım talepleri işlemleri
-      hiringRequest: {
-        getAll: (options?: any) => Promise<PaginatedResult<HiringRequest>>;
-        getById: (id: number) => Promise<HiringRequest | null>;
-        getByStatus: (status: string) => Promise<HiringRequest[]>;
-        getByDepartment: (departmentId: number) => Promise<HiringRequest[]>;
-        create: (data: any, userId?: number) => Promise<HiringRequest>;
-        update: (id: number, data: any, userId?: number) => Promise<HiringRequest>;
-        approve: (id: number, approverId: number, userId?: number) => Promise<HiringRequest>;
-        reject: (id: number, approverId: number, userId?: number) => Promise<HiringRequest>;
-        start: (id: number, userId?: number) => Promise<HiringRequest>;
-        complete: (id: number, userId?: number) => Promise<HiringRequest>;
-        cancel: (id: number, userId?: number) => Promise<HiringRequest>;
-        delete: (id: number, userId?: number) => Promise<HiringRequest>;
-        getStats: () => Promise<{ total: number; pending: number; approved: number; inProgress: number; completed: number }>;
-      };
-
-      // Oryantasyon işlemleri
-      onboarding: {
-        getAll: (options?: any) => Promise<PaginatedResult<Onboarding>>;
-        getById: (id: number) => Promise<Onboarding | null>;
-        getByEmployee: (employeeId: number) => Promise<Onboarding | null>;
-        getByStatus: (status: string) => Promise<Onboarding[]>;
-        create: (data: any, userId?: number) => Promise<Onboarding>;
-        createWithTasks: (data: any, userId?: number) => Promise<Onboarding>;
-        update: (id: number, data: any, userId?: number) => Promise<Onboarding>;
-        start: (id: number, userId?: number) => Promise<Onboarding>;
-        complete: (id: number, userId?: number) => Promise<Onboarding>;
-        cancel: (id: number, userId?: number) => Promise<Onboarding>;
-        delete: (id: number, userId?: number) => Promise<Onboarding>;
-        addTask: (onboardingId: number, data: any) => Promise<OnboardingTask>;
-        updateTask: (taskId: number, data: any) => Promise<OnboardingTask>;
-        completeTask: (taskId: number) => Promise<OnboardingTask>;
-        deleteTask: (taskId: number) => Promise<void>;
-        getStats: () => Promise<{ total: number; planned: number; inProgress: number; completed: number; avgCompletionRate: number }>;
+        get: (key: string) => Promise<ApiResponse<string | null>>;
+        getNumber: (key: string) => Promise<ApiResponse<number | null>>;
+        getBoolean: (key: string) => Promise<ApiResponse<boolean | null>>;
+        set: (key: string, value: string, group?: string, userId?: number) => Promise<ApiResponse<AppSetting>>;
+        setNumber: (key: string, value: number, group?: string, userId?: number) => Promise<ApiResponse<AppSetting>>;
+        setBoolean: (key: string, value: boolean, group?: string, userId?: number) => Promise<ApiResponse<AppSetting>>;
+        getByGroup: (group: string) => Promise<ApiResponse<AppSetting[]>>;
+        getAll: () => Promise<ApiResponse<AppSetting[]>>;
+        getAllGroups: () => Promise<ApiResponse<string[]>>;
+        delete: (key: string, userId?: number) => Promise<ApiResponse<AppSetting | null>>;
+        seedDefaults: (userId?: number) => Promise<ApiResponse<number>>;
       };
 
       // Rapor işlemleri
@@ -865,4 +878,4 @@ declare global {
   }
 }
 
-export {};
+export { };

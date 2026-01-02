@@ -184,7 +184,7 @@ import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
 
 const toast = useToast()
-const { showConfirm } = useConfirm()
+const { confirm: showConfirm } = useConfirm()
 
 const users = ref<any[]>([])
 const searchQuery = ref('')

@@ -159,9 +159,9 @@ const yearPeriods = computed(() => {
 
     const isActive = p.name === currentPeriodName || p.name === `${selectedYear.value} Yıl Sonu`
     const isPast = selectedYear.value < new Date().getFullYear() || 
-      (selectedYear.value === new Date().getFullYear() && parseInt(p.name.split('Q')[1]) < currentQuarter)
+      (selectedYear.value === new Date().getFullYear() && parseInt(p.name.split('Q')[1] || '0') < currentQuarter)
     const isFuture = selectedYear.value > new Date().getFullYear() ||
-      (selectedYear.value === new Date().getFullYear() && parseInt(p.name.split('Q')[1]) > currentQuarter)
+      (selectedYear.value === new Date().getFullYear() && parseInt(p.name.split('Q')[1] || '0') > currentQuarter)
 
     return {
       ...p,

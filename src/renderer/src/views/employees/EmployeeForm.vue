@@ -282,7 +282,7 @@ const loadPositions = async () => {
   try {
     const result = await window.electronAPI.position.getByDepartment(Number(form.departmentId))
     if (result.success) {
-      positions.value = result.data
+      positions.value = result.data || []
     }
   } catch (error) {
     console.error('Pozisyonlar yüklenemedi:', error)
@@ -322,7 +322,7 @@ const loadEmployee = async () => {
       form.departmentId = emp.departmentId?.toString() || ''
       form.positionId = emp.positionId?.toString() || ''
       form.managerId = emp.managerId?.toString() || ''
-      form.hireDate = emp.hireDate ? emp.hireDate.split('T')[0] : ''
+      form.hireDate = emp.hireDate ? emp.hireDate.split('T')[0] || '' : ''
       form.contractType = emp.contractType
       form.status = emp.status
       form.photoUrl = emp.photoUrl || ''
@@ -346,7 +346,7 @@ const generateCode = async () => {
   try {
     const result = await window.electronAPI.employee.generateCode()
     if (result.success) {
-      form.employeeCode = result.data.employeeCode
+      if (result.data) form.employeeCode = result.data.employeeCode
     }
   } catch (error) {
     showToast('Sicil no oluşturulamadı', 'error')

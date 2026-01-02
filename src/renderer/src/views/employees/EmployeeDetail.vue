@@ -135,7 +135,12 @@
         <!-- Detay Bilgiler -->
         <div v-if="activeTab === 'details'" class="info-grid">
           <div class="info-card full-width">
-            <h4>📝 Detay Bilgiler</h4>
+            <div class="section-header">
+              <h4>📝 Detay Bilgiler</h4>
+              <button class="btn btn-sm btn-outline-primary" @click="openDetailsModal">
+                ✏️ Düzenle
+              </button>
+            </div>
             <div v-if="details" class="details-grid">
               <div class="info-row">
                 <span class="info-label">Doğum Tarihi</span>
@@ -226,6 +231,106 @@
           <div v-else class="empty-state">
             <p>Bu personelin astı bulunmuyor</p>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Detay Düzenleme Modalı -->
+    <div v-if="showDetailsModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Personel Detaylarını Düzenle</h3>
+          <button class="close-btn" @click="closeDetailsModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Doğum Tarihi</label>
+            <input v-model="detailsForm.birthDate" type="date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Kan Grubu</label>
+            <select v-model="detailsForm.bloodGroup" class="form-control">
+              <option value="">Seçiniz</option>
+              <option v-for="bg in bloodGroups" :key="bg" :value="bg">{{ bg }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cinsiyet</label>
+            <select v-model="detailsForm.gender" class="form-control">
+              <option value="">Seçiniz</option>
+              <option v-for="g in genders" :key="g" :value="g">{{ g }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Medeni Durum</label>
+            <select v-model="detailsForm.maritalStatus" class="form-control">
+              <option value="">Seçiniz</option>
+              <option v-for="ms in maritalStatuses" :key="ms" :value="ms">{{ ms }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Eğitim Durumu</label>
+            <input v-model="detailsForm.educationLevel" type="text" class="form-control" placeholder="Örn: Lisans" />
+          </div>
+          <div class="form-group">
+            <label>Askerlik Durumu</label>
+            <select v-model="detailsForm.militaryStatus" class="form-control">
+              <option value="">Seçiniz</option>
+              <option v-for="ms in militaryStatuses" :key="ms" :value="ms">{{ ms }}</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Ev Adresi</label>
+            <textarea v-model="detailsForm.addressHome" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Acil Durum Kişisi</label>
+            <input v-model="detailsForm.emergencyContactName" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Acil Durum Telefonu</label>
+            <input v-model="detailsForm.emergencyContactPhone" type="text" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeDetailsModal">İptal</button>
+          <button class="btn btn-primary" @click="saveDetails" :disabled="savingDetails">
+            {{ savingDetails ? 'Kaydediliyor...' : 'Kaydet' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Belge Yükleme Modalı -->
+    <div v-if="showDocumentModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Yeni Belge Yükle</h3>
+          <button class="close-btn" @click="closeDocumentModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Belge Tipi</label>
+            <select v-model="documentForm.documentType" class="form-control">
+              <option v-for="dt in documentTypes" :key="dt" :value="dt">{{ dt }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Açıklama</label>
+            <input v-model="documentForm.description" type="text" class="form-control" />
+          </div>
+          <div class="form-group full-width">
+            <label>Dosya Seç</label>
+            <input type="file" @change="handleFileSelect" class="form-control" />
+            <small v-if="documentForm.filePath" class="text-success">
+              Seçilen dosya: {{ documentForm.fileName }}
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeDocumentModal">İptal</button>
+          <button class="btn btn-primary" @click="saveDocument" :disabled="savingDocument">
+            {{ savingDocument ? 'Yükleniyor...' : 'Yükle' }}
+          </button>
         </div>
       </div>
     </div>
@@ -324,7 +429,7 @@ const toggleIdentity = async () => {
     try {
       const result = await window.electronAPI.employee.getByIdDecrypted(Number(route.params.id))
       if (result.success && result.data) {
-        decryptedIdentity.value = result.data.decryptedIdentityNumber
+        decryptedIdentity.value = result.data.decryptedIdentityNumber || ''
       }
     } catch (error) {
       showToast('TC Kimlik No gösterilemedi', 'error')
@@ -366,16 +471,173 @@ const viewEmployee = (id: number) => {
   router.push(`/employees/${id}`)
 }
 
+// Seçenekler
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-']
+const genders = ['Erkek', 'Kadın', 'Diğer']
+const maritalStatuses = ['Bekar', 'Evli', 'Boşanmış', 'Dul']
+const militaryStatuses = ['Yapıldı', 'Muaf', 'Tecilli']
+const documentTypes = ['Sözleşme', 'Kimlik Fotokopisi', 'Diploma', 'Sağlık Raporu', 'Diğer']
+
+// Modal State
+const showDetailsModal = ref(false)
+const showDocumentModal = ref(false)
+const savingDetails = ref(false)
+const savingDocument = ref(false)
+const deletingDocument = ref(false)
+
+// Forms
+const detailsForm = ref<any>({
+  birthDate: '',
+  bloodGroup: '',
+  gender: '',
+  maritalStatus: '',
+  educationLevel: '',
+  militaryStatus: '',
+  addressHome: '',
+  emergencyContactName: '',
+  emergencyContactPhone: ''
+})
+
+const documentForm = ref({
+  documentType: '',
+  description: '',
+  filePath: '',
+  fileName: '' // Frontend'de göstermek için
+})
+
+// Methods
 const openDetailsModal = () => {
-  showToast('Detay bilgisi ekleme özelliği yakında eklenecek', 'info')
+  // Mevcut detaylar varsa formu doldur
+  if (details.value) {
+    detailsForm.value = {
+      ...details.value,
+      birthDate: details.value.birthDate ? new Date(details.value.birthDate).toISOString().split('T')[0] : ''
+    }
+  } else {
+    // Yoksa boşalt
+    detailsForm.value = {
+      birthDate: '',
+      bloodGroup: '',
+      gender: '',
+      maritalStatus: '',
+      educationLevel: '',
+      militaryStatus: '',
+      addressHome: '',
+      emergencyContactName: '',
+      emergencyContactPhone: ''
+    }
+  }
+  showDetailsModal.value = true
+}
+
+const closeDetailsModal = () => {
+  showDetailsModal.value = false
+}
+
+const saveDetails = async () => {
+  savingDetails.value = true
+  try {
+    const data = { ...detailsForm.value }
+    // Boş tarih kontrolü
+    if (!data.birthDate) delete data.birthDate
+    else data.birthDate = new Date(data.birthDate)
+
+    let result
+    if (details.value) {
+      result = await window.electronAPI.employeeDetails.update(Number(route.params.id), data)
+    } else {
+      result = await window.electronAPI.employeeDetails.create(Number(route.params.id), data)
+    }
+    
+    if (result.success) {
+      showToast('Detay bilgileri kaydedildi', 'success')
+      details.value = result.data
+      closeDetailsModal()
+    } else {
+      showToast(result.errors?.[0] || 'Kaydedilemedi', 'error')
+    }
+  } catch (error) {
+    showToast('Bir hata oluştu', 'error')
+  } finally {
+    savingDetails.value = false
+  }
 }
 
 const openDocumentModal = () => {
-  showToast('Belge yükleme özelliği yakında eklenecek', 'info')
+  documentForm.value = {
+    documentType: 'Diğer',
+    description: '',
+    filePath: '',
+    fileName: ''
+  }
+  showDocumentModal.value = true
+}
+
+const closeDocumentModal = () => {
+  showDocumentModal.value = false
+}
+
+const handleFileSelect = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0] as any
+  if (file) {
+    documentForm.value.fileName = file.name
+    // Electron ortamında dosya yolu
+    documentForm.value.filePath = file.path
+  }
+}
+
+const saveDocument = async () => {
+  if (!documentForm.value.filePath) {
+    showToast('Lütfen bir dosya seçin', 'warning')
+    return
+  }
+
+  savingDocument.value = true
+  try {
+    const data = {
+      employeeId: Number(route.params.id),
+      documentType: documentForm.value.documentType,
+      title: documentForm.value.fileName, // Başlık olarak dosya adını kullanıyoruz varsayılan
+      filePath: documentForm.value.filePath,
+      description: documentForm.value.description
+    }
+
+    const result = await window.electronAPI.employeeDocuments.upload(Number(route.params.id), data)
+    
+    if (result.success) {
+      showToast('Belge yüklendi', 'success')
+      closeDocumentModal()
+      await loadDocuments()
+    } else {
+      showToast(result.errors?.[0] || 'Yüklenemedi', 'error')
+    }
+  } catch (error) {
+    showToast('Bir hata oluştu', 'error')
+  } finally {
+    savingDocument.value = false
+  }
 }
 
 const deleteDocument = async (id: number) => {
-  showToast('Belge silme özelliği yakında eklenecek', 'info')
+  if (!confirm('Bu belgeyi silmek istediğinize emin misiniz?')) return
+
+  try {
+    const result = await window.electronAPI.employeeDocuments.delete(id)
+    if (result.success) {
+      showToast('Belge silindi', 'success')
+      await loadDocuments()
+    } else {
+      showToast('Silinemedi', 'error')
+    }
+  } catch (error) {
+    showToast('Hata oluştu', 'error')
+  }
+}
+
+const fileUrl = (path: string) => {
+  // Yerel dosya yolunu göstermek için (güvenlik kısıtlamaları olabilir, backend üzerinden okunmalı normalde)
+  // Şimdilik sadece ikon gösteriyoruz, indirme işlemi backend üzerinden yapılmalı.
+  return '#'
 }
 
 const goBack = () => {
@@ -771,4 +1033,110 @@ onMounted(async () => {
 .btn-secondary:hover {
   background: #5a6268;
 }
-</style>
+
+/* Modal Stilleri */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.form-control {
+  padding: 0.625rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #0466c8;
+}
+
+.btn-outline-primary {
+  background: white;
+  color: #0466c8;
+  border: 1px solid #0466c8;
+}
+
+.btn-outline-primary:hover {
+  background: #f0f7ff;
+}
+
+.text-success {
+  color: #198754;
+  font-size: 0.85rem;
+}</style>

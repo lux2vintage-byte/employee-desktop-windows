@@ -270,7 +270,7 @@ const updateStats = () => {
 const openCreateModal = () => {
   isEditing.value = false
   resetForm()
-  form.incidentDate = new Date().toISOString().split('T')[0]
+  form.incidentDate = new Date().toISOString().split('T')[0] || ''
   showModal.value = true
 }
 

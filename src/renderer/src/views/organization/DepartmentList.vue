@@ -298,7 +298,7 @@ const loadHierarchy = async () => {
   try {
     const result = await window.electronAPI.department.getHierarchy()
     if (result.success) {
-      hierarchy.value = result.data
+      hierarchy.value = result.data || []
     }
   } catch (error) {
     console.error('Hiyerarşi yüklenemedi:', error)
@@ -414,6 +414,7 @@ const handleSubmit = async () => {
       await loadDepartments()
       await loadHierarchy()
     } else {
+      // Backend'den gelen özel hata mesajını göster
       showToast(result.errors?.[0] || 'İşlem başarısız', 'error')
     }
   } catch (error) {

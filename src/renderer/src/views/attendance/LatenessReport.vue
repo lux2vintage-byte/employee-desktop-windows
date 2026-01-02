@@ -314,7 +314,7 @@ const calculateLateMinutes = (checkInTime: string | null) => {
   const checkIn = new Date(checkInTime)
   const [startHour, startMin] = workHours.start.split(':').map(Number)
   const expectedStart = new Date(checkIn)
-  expectedStart.setHours(startHour, startMin + workHours.tolerance, 0, 0)
+  expectedStart.setHours(startHour || 0, (startMin || 0) + workHours.tolerance, 0, 0)
   
   if (checkIn > expectedStart) {
     return Math.round((checkIn.getTime() - expectedStart.getTime()) / 60000)
@@ -328,7 +328,7 @@ const calculateEarlyMinutes = (checkOutTime: string | null) => {
   const checkOut = new Date(checkOutTime)
   const [endHour, endMin] = workHours.end.split(':').map(Number)
   const expectedEnd = new Date(checkOut)
-  expectedEnd.setHours(endHour, endMin - workHours.tolerance, 0, 0)
+  expectedEnd.setHours(endHour || 0, (endMin || 0) - workHours.tolerance, 0, 0)
   
   if (checkOut < expectedEnd) {
     return Math.round((expectedEnd.getTime() - checkOut.getTime()) / 60000)

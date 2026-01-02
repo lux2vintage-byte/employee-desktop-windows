@@ -77,11 +77,11 @@
     </div>
     
     <!-- Pagination -->
-    <div v-if="showPagination && totalPages > 1" class="pagination">
+    <div v-if="showPagination && (totalPages || 0) > 1" class="pagination">
       <button 
         class="page-btn" 
         :disabled="currentPage === 1"
-        @click="$emit('page-change', currentPage - 1)"
+        @click="$emit('page-change', (currentPage || 1) - 1)"
       >
         ‹ Önceki
       </button>
@@ -91,7 +91,7 @@
       <button 
         class="page-btn" 
         :disabled="currentPage === totalPages"
-        @click="$emit('page-change', currentPage + 1)"
+        @click="$emit('page-change', (currentPage || 1) + 1)"
       >
         Sonraki ›
       </button>

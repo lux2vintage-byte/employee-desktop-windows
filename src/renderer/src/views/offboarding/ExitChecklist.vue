@@ -296,7 +296,7 @@ const toggleChecklistItem = (resignation: any, index: number) => {
   if (!checklistStates.value[resignation.id]) {
     checklistStates.value[resignation.id] = defaultChecklistItems.map(() => false)
   }
-  checklistStates.value[resignation.id][index] = !checklistStates.value[resignation.id][index]
+  checklistStates.value[resignation.id]![index] = !checklistStates.value[resignation.id]![index]
 }
 
 const getProgress = (resignation: any) => {
