@@ -1,4 +1,4 @@
-import { PrismaClient, Employee } from '@prisma/client'
+import { PrismaClient, Employee, EmployeeDetails } from '@prisma/client'
 import { BaseRepository, FindAllOptions, PaginatedResult } from './BaseRepository'
 
 /**
@@ -19,6 +19,7 @@ export interface EmployeeWithRelations extends Employee {
     lastName: string
     employeeCode: string
   } | null
+  details?: EmployeeDetails | null
   _count?: {
     subordinates: number
     documents: number
@@ -76,7 +77,7 @@ export class EmployeeRepository extends BaseRepository<Employee> {
     if (managerId) whereClause.managerId = managerId
     if (status) whereClause.status = status
     if (contractType) whereClause.contractType = contractType
-    
+
     // Arama terimi
     if (searchTerm) {
       whereClause.OR = [
@@ -94,6 +95,7 @@ export class EmployeeRepository extends BaseRepository<Employee> {
         take: limit,
         orderBy: { [orderBy]: order },
         include: {
+          details: true,
           department: {
             select: {
               id: true,
@@ -146,6 +148,7 @@ export class EmployeeRepository extends BaseRepository<Employee> {
     const result = await this.prisma.employee.findFirst({
       where: whereClause,
       include: {
+        details: true,
         department: {
           select: {
             id: true,

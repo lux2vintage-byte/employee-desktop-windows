@@ -22,6 +22,9 @@ export interface CreateEmployeeDto {
   hireDate: Date | string
   contractType: ContractType
   status?: EmployeeStatus
+  birthDate?: Date | string | null
+  gender?: string | null
+  educationLevel?: string | null
 }
 
 /**
@@ -41,6 +44,9 @@ export interface UpdateEmployeeDto {
   hireDate?: Date | string
   contractType?: ContractType
   status?: EmployeeStatus
+  birthDate?: Date | string | null
+  gender?: string | null
+  educationLevel?: string | null
 }
 
 /**
@@ -165,7 +171,14 @@ export class EmployeeService {
       managerId: data.managerId || null,
       hireDate,
       contractType: data.contractType,
-      status: data.status || 'Active'
+      status: data.status || 'Active',
+      details: {
+        create: {
+          birthDate: data.birthDate ? (typeof data.birthDate === 'string' ? new Date(data.birthDate) : data.birthDate) : null,
+          gender: data.gender,
+          educationLevel: data.educationLevel
+        }
+      }
     }
 
     return await this.repository.create(createData as any, userId)
@@ -190,7 +203,7 @@ export class EmployeeService {
 
     if (data.firstName !== undefined) updateData.firstName = data.firstName.trim()
     if (data.lastName !== undefined) updateData.lastName = data.lastName.trim()
-    
+
     // TC Kimlik No değişiyorsa şifrele
     // Requirements: 4.5
     if (data.identityNumber !== undefined) {
@@ -209,6 +222,26 @@ export class EmployeeService {
     }
     if (data.contractType !== undefined) updateData.contractType = data.contractType
     if (data.status !== undefined) updateData.status = data.status
+
+    if (data.birthDate !== undefined || data.gender !== undefined || data.educationLevel !== undefined) {
+      const detailsUpdate: any = {}
+      if (data.birthDate !== undefined) {
+        detailsUpdate.birthDate = data.birthDate ? (typeof data.birthDate === 'string' ? new Date(data.birthDate) : data.birthDate) : null
+      }
+      if (data.gender !== undefined) {
+        detailsUpdate.gender = data.gender
+      }
+      if (data.educationLevel !== undefined) {
+        detailsUpdate.educationLevel = data.educationLevel
+      }
+
+      updateData.details = {
+        upsert: {
+          create: detailsUpdate,
+          update: detailsUpdate
+        }
+      }
+    }
 
     return await this.repository.update(id, updateData, userId)
   }

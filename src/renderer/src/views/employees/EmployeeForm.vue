@@ -71,6 +71,38 @@
             />
             <span v-if="errors.lastName" class="form-error">{{ errors.lastName }}</span>
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Doğum Tarihi</label>
+            <input 
+              v-model="form.birthDate" 
+              type="date" 
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Cinsiyet</label>
+            <select v-model="form.gender" class="form-control">
+              <option value="">Seçiniz</option>
+              <option value="Erkek">Erkek</option>
+              <option value="Kadın">Kadın</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Eğitim Durumu</label>
+            <select v-model="form.educationLevel" class="form-control">
+              <option value="">Seçiniz</option>
+              <option value="Yok">Yok</option>
+              <option value="İlköğretim">İlköğretim</option>
+              <option value="Lise">Lise</option>
+              <option value="Ön Lisans">Ön Lisans</option>
+              <option value="Lisans">Lisans</option>
+              <option value="Yüksek Lisans">Yüksek Lisans</option>
+              <option value="Doktora">Doktora</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -255,7 +287,10 @@ const form = reactive({
   hireDate: '',
   contractType: '',
   status: 'Active',
-  photoUrl: ''
+  photoUrl: '',
+  birthDate: '',
+  gender: '',
+  educationLevel: ''
 })
 
 const errors = reactive<Record<string, string>>({})
@@ -311,7 +346,7 @@ const loadEmployee = async () => {
   try {
     const result = await window.electronAPI.employee.getByIdDecrypted(Number(route.params.id))
     if (result.success && result.data) {
-      const emp = result.data
+      const emp = result.data as any
       form.employeeCode = emp.employeeCode
       form.identityNumber = emp.decryptedIdentityNumber || ''
       form.firstName = emp.firstName
@@ -326,6 +361,12 @@ const loadEmployee = async () => {
       form.contractType = emp.contractType
       form.status = emp.status
       form.photoUrl = emp.photoUrl || ''
+      
+      if (emp.details) {
+        form.birthDate = emp.details.birthDate ? emp.details.birthDate.split('T')[0] : ''
+        form.gender = emp.details.gender || ''
+        form.educationLevel = emp.details.educationLevel || ''
+      }
       
       // Pozisyonları yükle
       if (form.departmentId) {
@@ -421,7 +462,10 @@ const handleSubmit = async () => {
       hireDate: form.hireDate,
       contractType: form.contractType,
       status: form.status,
-      photoUrl: form.photoUrl || null
+      photoUrl: form.photoUrl || null,
+      birthDate: form.birthDate || null,
+      gender: form.gender || null,
+      educationLevel: form.educationLevel || null
     }
 
     let result
