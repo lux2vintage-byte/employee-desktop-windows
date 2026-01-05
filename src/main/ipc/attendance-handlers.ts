@@ -110,9 +110,9 @@ export function setupAttendanceHandlers(): void {
   })
 
   // Durum ayarla
-  ipcMain.handle('attendance-set-status', async (_event, logId: number, status: string, userId?: number) => {
+  ipcMain.handle('attendance-set-status', async (_event, logId: number, status: string, leaveTypeId?: number | null, userId?: number) => {
     try {
-      return await attendanceController!.setStatus(logId, status, userId)
+      return await attendanceController!.setStatus(logId, status, leaveTypeId, userId)
     } catch (error) {
       return { success: false, errors: ['Durum güncellenemedi: ' + (error as Error).message] }
     }

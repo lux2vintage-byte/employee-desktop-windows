@@ -267,7 +267,7 @@ export class AttendanceService {
    * Durum ayarla
    * Requirements: 7.3
    */
-  async setStatus(logId: number, status: AttendanceStatus, userId?: number): Promise<AttendanceLog> {
+  async setStatus(logId: number, status: AttendanceStatus, leaveTypeId?: number | null, userId?: number): Promise<AttendanceLog> {
     const statusValidation = ValidationUtils.validateAttendanceStatus(status)
     if (!statusValidation.isValid) {
       throw new ValidationError('status', status, statusValidation.error!)
@@ -278,7 +278,19 @@ export class AttendanceService {
       throw new BusinessRuleError('Puantaj kaydı bulunamadı', { id: logId })
     }
 
-    return await this.repository.update(logId, { status } as any, userId)
+    // İzinli durumunda leaveTypeId zorunlu
+    const updateData: any = { status }
+    if (status === 'İzinli') {
+      if (!leaveTypeId) {
+        throw new ValidationError('leaveTypeId', leaveTypeId, 'İzinli durumu için izin türü zorunludur')
+      }
+      updateData.leaveTypeId = leaveTypeId
+    } else {
+      // İzinli değilse leaveTypeId'yi temizle
+      updateData.leaveTypeId = null
+    }
+
+    return await this.repository.update(logId, updateData, userId)
   }
 
   /**

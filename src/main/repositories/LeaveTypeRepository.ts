@@ -6,13 +6,15 @@ import { BaseRepository, FindAllOptions, PaginatedResult } from './BaseRepositor
  * Requirements: 9.6
  */
 export const DEFAULT_LEAVE_TYPES = [
-  { name: 'Yıllık İzin', isPaid: true, deductsFromAnnual: true, limitDays: null },
-  { name: 'Mazeret İzni', isPaid: true, deductsFromAnnual: false, limitDays: 5 },
-  { name: 'Rapor', isPaid: true, deductsFromAnnual: false, limitDays: null },
-  { name: 'Babalık İzni', isPaid: true, deductsFromAnnual: false, limitDays: 5 },
-  { name: 'Doğum İzni', isPaid: true, deductsFromAnnual: false, limitDays: 112 },
-  { name: 'Evlilik İzni', isPaid: true, deductsFromAnnual: false, limitDays: 3 },
-  { name: 'Ölüm İzni', isPaid: true, deductsFromAnnual: false, limitDays: 3 }
+  { name: 'Yıllık İzin', abbreviation: 'Yİ', isPaid: true, deductsFromAnnual: true, limitDays: null },
+  { name: 'Mazeret İzni', abbreviation: 'Mİ', isPaid: true, deductsFromAnnual: false, limitDays: 5 },
+  { name: 'Rapor', abbreviation: 'RP', isPaid: true, deductsFromAnnual: false, limitDays: null },
+  { name: 'Babalık İzni', abbreviation: 'Bİ', isPaid: true, deductsFromAnnual: false, limitDays: 5 },
+  { name: 'Doğum İzni', abbreviation: 'Dİ', isPaid: true, deductsFromAnnual: false, limitDays: 112 },
+  { name: 'Evlilik İzni', abbreviation: 'Eİ', isPaid: true, deductsFromAnnual: false, limitDays: 3 },
+  { name: 'Ölüm İzni', abbreviation: 'Öİ', isPaid: true, deductsFromAnnual: false, limitDays: 3 },
+  { name: 'Evlat Edinme İzni', abbreviation: 'EE', isPaid: true, deductsFromAnnual: false, limitDays: 3 },
+  { name: 'Engelli Yakını İzni', abbreviation: 'EY', isPaid: true, deductsFromAnnual: false, limitDays: 10 }
 ] as const
 
 /**

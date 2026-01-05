@@ -103,6 +103,7 @@ const menus = ref([
       { path: '/attendance/lateness-report', label: 'Geç Kalma / Erken Çıkma', icon: '⚠️' },
       { path: '/leave-requests', label: 'İzin Talepleri', icon: '📋', divider: 'İzin Yönetimi' },
       { path: '/leave-types', label: 'İzin Türleri', icon: '📑' },
+      { path: '/day-types', label: 'Gün Türleri', icon: '📆' },
       { path: '/leave-balances', label: 'İzin Bakiyeleri', icon: '📊' }
     ]
   },

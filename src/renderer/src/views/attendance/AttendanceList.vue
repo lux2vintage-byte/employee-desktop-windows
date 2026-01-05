@@ -93,8 +93,13 @@
       <template #cell-workingHours="{ row }">
         <span class="working-hours">{{ calculateWorkingHours(row) }}</span>
       </template>
-      <template #cell-status="{ value }">
-        <span :class="['status-badge', `status-${getStatusClass(value)}`]">{{ value }}</span>
+      <template #cell-status="{ row, value }">
+        <div class="status-cell">
+          <span :class="['status-badge', `status-${getStatusClass(value)}`]">{{ value }}</span>
+          <span v-if="value === 'İzinli' && row.leaveType" class="leave-type-tag">
+            {{ row.leaveType.name }}
+          </span>
+        </div>
       </template>
       <template #actions="{ row }">
         <button 
@@ -166,6 +171,15 @@
                   </select>
                 </div>
               </div>
+              <div class="form-group" v-if="form.status === 'İzinli'">
+                <label>İzin Türü *</label>
+                <select v-model="form.leaveTypeId" class="form-control" required>
+                  <option :value="null">İzin Türü Seçin</option>
+                  <option v-for="lt in leaveTypes" :key="lt.id" :value="lt.id">
+                    {{ lt.name }} {{ lt.isPaid ? '(Ücretli)' : '(Ücretsiz)' }}
+                  </option>
+                </select>
+              </div>
               <div class="form-group">
                 <label>Not</label>
                 <textarea v-model="form.dailyNote" rows="2" class="form-control"></textarea>
@@ -204,6 +218,7 @@ const editingRecord = ref<any>(null)
 const attendanceRecords = ref<any[]>([])
 const employees = ref<any[]>([])
 const departments = ref<any[]>([])
+const leaveTypes = ref<any[]>([])
 
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
@@ -234,6 +249,7 @@ const form = reactive({
   checkOutTime: '',
   breakDuration: 0,
   status: 'Geldi',
+  leaveTypeId: null as number | null,
   dailyNote: ''
 })
 
@@ -244,7 +260,7 @@ const columns: TableColumn[] = [
   { key: 'checkOutTime', label: 'Çıkış', width: '100px' },
   { key: 'breakDuration', label: 'Mola (dk)', width: '90px' },
   { key: 'workingHours', label: 'Çalışma', width: '100px' },
-  { key: 'status', label: 'Durum', width: '100px' },
+  { key: 'status', label: 'Durum', width: '120px' },
   { key: 'dailyNote', label: 'Not' }
 ]
 
@@ -306,6 +322,17 @@ const loadDepartments = async () => {
   }
 }
 
+const loadLeaveTypes = async () => {
+  try {
+    const result = await window.electronAPI.leaveType.getAll({ limit: 100 })
+    if (result.success) {
+      leaveTypes.value = result.data || []
+    }
+  } catch (err) {
+    console.error('İzin türleri yüklenemedi:', err)
+  }
+}
+
 const openNewModal = () => {
   editingRecord.value = null
   resetForm()
@@ -320,6 +347,7 @@ const openEditModal = (record: any) => {
   form.checkOutTime = record.checkOutTime ? formatTimeForInput(record.checkOutTime) : ''
   form.breakDuration = record.breakDuration || 0
   form.status = record.status || 'Geldi'
+  form.leaveTypeId = record.leaveTypeId || null
   form.dailyNote = record.dailyNote || ''
   showModal.value = true
 }
@@ -337,15 +365,24 @@ const resetForm = () => {
   form.checkOutTime = ''
   form.breakDuration = 0
   form.status = 'Geldi'
+  form.leaveTypeId = null
   form.dailyNote = ''
 }
 
 const saveRecord = async () => {
   saving.value = true
   try {
+    // İzinli seçilmişse izin türü zorunlu
+    if (form.status === 'İzinli' && !form.leaveTypeId) {
+      error('İzinli durumu için izin türü seçmelisiniz')
+      saving.value = false
+      return
+    }
+
     const data: any = {
       status: form.status,
       breakDuration: form.breakDuration,
+      leaveTypeId: form.status === 'İzinli' ? form.leaveTypeId : null,
       dailyNote: form.dailyNote || null
     }
 
@@ -358,7 +395,7 @@ const saveRecord = async () => {
 
     let result
     if (editingRecord.value) {
-      result = await window.electronAPI.attendance.setStatus(editingRecord.value.id, form.status)
+      result = await window.electronAPI.attendance.setStatus(editingRecord.value.id, form.status, form.leaveTypeId ?? undefined)
       if (result.success && form.breakDuration !== editingRecord.value.breakDuration) {
         await window.electronAPI.attendance.setBreakDuration(editingRecord.value.id, form.breakDuration)
       }
@@ -419,9 +456,17 @@ const confirmDelete = async (record: any) => {
   })
 
   if (confirmed) {
-    // Silme işlemi - backend'de implement edilmeli
-    success('Kayıt silindi')
-    loadAttendance()
+    try {
+      const result = await window.electronAPI.attendance.delete(record.id)
+      if (result && result.success) {
+        success('Kayıt silindi')
+        loadAttendance()
+      } else {
+        error(result?.errors?.[0] || 'Silme işlemi başarısız')
+      }
+    } catch (err) {
+      error('Silme sırasında hata oluştu')
+    }
   }
 }
 
@@ -473,6 +518,7 @@ onMounted(() => {
   loadAttendance()
   loadEmployees()
   loadDepartments()
+  loadLeaveTypes()
 })
 </script>
 
@@ -590,6 +636,20 @@ onMounted(() => {
 .status-danger { background: #f8d7da; color: #721c24; }
 .status-warning { background: #fff3cd; color: #856404; }
 .status-info { background: #cce5ff; color: #004085; }
+
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.leave-type-tag {
+  font-size: 0.7rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+}
 
 .action-btn {
   padding: 0.375rem 0.5rem;

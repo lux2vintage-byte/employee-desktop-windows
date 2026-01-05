@@ -7,6 +7,7 @@ import { PaginatedResult } from '../repositories/BaseRepository'
  */
 export interface CreateLeaveTypeDto {
   name: string
+  abbreviation?: string | null
   isPaid?: boolean
   deductsFromAnnual?: boolean
   limitDays?: number | null
@@ -17,6 +18,7 @@ export interface CreateLeaveTypeDto {
  */
 export interface UpdateLeaveTypeDto {
   name?: string
+  abbreviation?: string | null
   isPaid?: boolean
   deductsFromAnnual?: boolean
   limitDays?: number | null
@@ -123,6 +125,7 @@ export class LeaveTypeService {
 
     const createData = {
       name: data.name.trim(),
+      abbreviation: data.abbreviation?.trim() || null,
       isPaid: data.isPaid ?? true,
       deductsFromAnnual: data.deductsFromAnnual ?? false,
       limitDays: data.limitDays ?? null
@@ -150,6 +153,9 @@ export class LeaveTypeService {
 
     if (data.name !== undefined) {
       updateData.name = data.name.trim()
+    }
+    if (data.abbreviation !== undefined) {
+      updateData.abbreviation = data.abbreviation?.trim() || null
     }
     if (data.isPaid !== undefined) {
       updateData.isPaid = data.isPaid

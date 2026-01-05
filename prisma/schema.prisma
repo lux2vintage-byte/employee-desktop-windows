@@ -269,14 +269,18 @@ model AttendanceLog {
   checkOutTime  DateTime? @map("check_out_time")
   breakDuration Int       @default(0) @map("break_duration") // dakika
   status        String    @default("Geldi") // Geldi, Gelmedi, İzinli, Tatil
+  leaveTypeId   Int?      @map("leave_type_id") // İzinli durumunda izin türü
+  dayTypeId     Int?      @map("day_type_id") // Gün türü (Normal, Hafta Tatili, Bayram vb.)
   dailyNote     String?   @map("daily_note")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
   employee      Employee  @relation(fields: [employeeId], references: [id])
+  leaveType     LeaveType? @relation(fields: [leaveTypeId], references: [id])
+  dayType       DayType?   @relation(fields: [dayTypeId], references: [id])
 
-  @@unique([employeeId, date])
+  @@index([employeeId, date]) // Soft delete ile uyumlu olması için unique yerine index
   @@map("attendance_logs")
 }
 
@@ -305,7 +309,8 @@ model Overtime {
 // İzin türleri tablosu
 model LeaveType {
   id                Int       @id @default(autoincrement())
-  name              String    @unique
+  name              String
+  abbreviation      String?   // Puantaj kısaltması (örn: Yİ, Öİ, Dİ)
   isPaid            Boolean   @default(true) @map("is_paid")
   deductsFromAnnual Boolean   @default(false) @map("deducts_from_annual")
   limitDays         Int?      @map("limit_days")
@@ -314,8 +319,25 @@ model LeaveType {
   deletedAt         DateTime? @map("deleted_at")
 
   leaveRequests     LeaveRequest[]
+  attendanceLogs    AttendanceLog[]
 
   @@map("leave_types")
+}
+
+// Gün türleri tablosu (puantaj için)
+model DayType {
+  id           Int       @id @default(autoincrement())
+  name         String    @unique // Örn: Normal Gün, Hafta Tatili, Resmi Bayram
+  abbreviation String    // Puantaj kısaltması (örn: NG, HT, RB)
+  color        String?   // Puantaj hücre rengi (hex kodu)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  attendanceLogs AttendanceLog[]
+
+  @@map("day_types")
 }
 
 // İzin talepleri tablosu

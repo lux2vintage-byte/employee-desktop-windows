@@ -11,6 +11,11 @@ export interface AttendanceWithRelations extends AttendanceLog {
     lastName: string
     employeeCode: string
   } | null
+  leaveType?: {
+    id: number
+    name: string
+    isPaid: boolean
+  } | null
 }
 
 /**
@@ -33,6 +38,7 @@ export interface BulkAttendanceDto {
   checkOutTime?: Date | null
   breakDuration?: number
   status?: string
+  leaveTypeId?: number | null
   dailyNote?: string | null
 }
 
@@ -117,6 +123,13 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
               lastName: true,
               employeeCode: true
             }
+          },
+          leaveType: {
+            select: {
+              id: true,
+              name: true,
+              isPaid: true
+            }
           }
         }
       }),
@@ -150,6 +163,13 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
             firstName: true,
             lastName: true,
             employeeCode: true
+          }
+        },
+        leaveType: {
+          select: {
+            id: true,
+            name: true,
+            isPaid: true
           }
         }
       }
@@ -228,6 +248,13 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
             lastName: true,
             employeeCode: true
           }
+        },
+        leaveType: {
+          select: {
+            id: true,
+            name: true,
+            isPaid: true
+          }
         }
       }
     })
@@ -257,6 +284,13 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
             firstName: true,
             lastName: true,
             employeeCode: true
+          }
+        },
+        leaveType: {
+          select: {
+            id: true,
+            name: true,
+            isPaid: true
           }
         }
       }
@@ -302,25 +336,28 @@ export class AttendanceRepository extends BaseRepository<AttendanceLog> {
         const normalizedDate = new Date(record.date)
         normalizedDate.setHours(0, 0, 0, 0)
 
-        const data = {
+        const data: any = {
           employeeId: record.employeeId,
           date: normalizedDate,
           checkInTime: record.checkInTime ? new Date(record.checkInTime) : null,
           checkOutTime: record.checkOutTime ? new Date(record.checkOutTime) : null,
           breakDuration: record.breakDuration || 0,
           status: record.status || 'Geldi',
+          leaveTypeId: record.status === 'İzinli' ? record.leaveTypeId : null,
           dailyNote: record.dailyNote || null
         }
 
         const created = await tx.attendanceLog.create({ data })
         createdRecords.push(created)
-
-        // Audit log
-        await this.logAudit('INSERT', created.id, undefined, this.toPlain(created), userId)
       }
     }, {
       timeout: 20000 // 20 saniye timeout (varsayılan 5000ms yetersiz kalabilir)
     })
+
+    // Audit log'ları transaction dışında oluştur (SQLite lock sorununu önlemek için)
+    for (const created of createdRecords) {
+      await this.logAudit('INSERT', created.id, undefined, this.toPlain(created), userId)
+    }
 
     return this.toPlain(createdRecords)
   }

@@ -29,6 +29,8 @@ import { setupSalaryParameterHandlers } from './ipc/salary-parameter-handlers'
 import { setupEmployeeAllowanceHandlers } from './ipc/employee-allowance-handlers'
 import { setupPaymentHistoryHandlers } from './ipc/payment-history-handlers'
 import { setupReportHandlers } from './ipc/report-handlers'
+import { setupDayTypeHandlers } from './ipc/day-type-handlers'
+import { setupCalendarHandlers } from './ipc/calendar-handlers'
 
 // GPU hatalarını önlemek için GPU'yu devre dışı bırak
 app.disableHardwareAcceleration()
@@ -178,6 +180,8 @@ function setupIPCHandlers(): void {
   setupSalaryParameterHandlers()
   setupEmployeeAllowanceHandlers()
   setupPaymentHistoryHandlers()
+  setupDayTypeHandlers()
+  setupCalendarHandlers()
   setupReportHandlers()
 }
 

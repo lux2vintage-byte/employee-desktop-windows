@@ -1,25 +1,24 @@
 <template>
-  <div class="leave-type-page">
+  <div class="day-type-page">
     <PageHeader 
-      title="İzin Türleri" 
-      description="Yıllık, mazeret, doğum ve diğer izin türlerini yönetin"
+      title="Gün Türleri" 
+      description="Puantajda kullanılacak gün türlerini yönetin (Normal Gün, Hafta Tatili, Bayram vb.)"
     >
       <template #actions>
         <button class="btn btn-secondary" @click="seedDefaults" style="margin-right: 0.5rem;">
           🔄 Varsayılanları Yükle
         </button>
         <button class="btn btn-primary" @click="openNewModal">
-          ➕ Yeni İzin Türü
+          ➕ Yeni Gün Türü
         </button>
       </template>
     </PageHeader>
 
     <!-- İstatistik Kartları -->
     <div class="stats-grid">
-      <StatCard icon="📋" :value="stats.total" label="Toplam Tür" color="primary" />
-      <StatCard icon="💰" :value="stats.paid" label="Ücretli İzin" color="success" />
-      <StatCard icon="📝" :value="stats.unpaid" label="Ücretsiz İzin" color="warning" />
-      <StatCard icon="📊" :value="stats.deducting" label="Bakiyeden Düşen" color="info" />
+      <StatCard icon="📅" :value="stats.total" label="Toplam Tür" color="primary" />
+      <StatCard icon="✅" :value="stats.active" label="Aktif" color="success" />
+      <StatCard icon="⏸️" :value="stats.inactive" label="Pasif" color="warning" />
     </div>
 
     <!-- Araç Çubuğu -->
@@ -33,63 +32,59 @@
     >
       <template #left>
         <div class="filter-group">
-          <select v-model="filters.isPaid" @change="loadLeaveTypes" class="filter-select">
-            <option value="">Tüm Türler</option>
-            <option value="true">Ücretli</option>
-            <option value="false">Ücretsiz</option>
+          <select v-model="filters.isActive" @change="loadDayTypes" class="filter-select">
+            <option value="">Tüm Durumlar</option>
+            <option value="true">Aktif</option>
+            <option value="false">Pasif</option>
           </select>
         </div>
         <div class="filter-group">
           <input 
             v-model="filters.search" 
-            @input="loadLeaveTypes" 
+            @input="loadDayTypes" 
             type="text" 
-            placeholder="İzin türü ara..." 
+            placeholder="Gün türü ara..." 
             class="filter-input"
           />
         </div>
       </template>
     </ActionToolbar>
 
-    <!-- İzin Türleri Tablosu -->
+    <!-- Gün Türleri Tablosu -->
     <DataTable
       :columns="columns"
-      :data="leaveTypes"
+      :data="dayTypes"
       :loading="loading"
       :show-actions="true"
       :show-pagination="true"
       :current-page="pagination.page"
       :total-pages="pagination.totalPages"
       :total="pagination.total"
-      empty-text="İzin türü bulunmuyor"
+      empty-text="Gün türü bulunmuyor"
       @page-change="handlePageChange"
     >
       <template #cell-name="{ row }">
         <div class="type-name">
-          <span class="type-icon">{{ getTypeIcon(row) }}</span>
+          <span class="type-color" :style="{ backgroundColor: row.color || '#e9ecef' }"></span>
           <span>{{ row.name }}</span>
         </div>
       </template>
       <template #cell-abbreviation="{ value }">
-        <span v-if="value" class="abbrev-badge">{{ value }}</span>
-        <span v-else class="text-muted">-</span>
+        <span class="abbrev-badge">{{ value }}</span>
       </template>
-      <template #cell-isPaid="{ value }">
+      <template #cell-color="{ value }">
+        <div class="color-preview" :style="{ backgroundColor: value || '#e9ecef' }">
+          {{ value || '-' }}
+        </div>
+      </template>
+      <template #cell-isActive="{ value }">
         <span :class="['badge', value ? 'badge-success' : 'badge-warning']">
-          {{ value ? 'Ücretli' : 'Ücretsiz' }}
+          {{ value ? 'Aktif' : 'Pasif' }}
         </span>
-      </template>
-      <template #cell-deductsFromAnnual="{ value }">
-        <span :class="['badge', value ? 'badge-info' : 'badge-secondary']">
-          {{ value ? 'Evet' : 'Hayır' }}
-        </span>
-      </template>
-      <template #cell-limitDays="{ value }">
-        <span class="day-value">{{ value || '∞' }} gün</span>
       </template>
       <template #actions="{ row }">
-        <button class="action-btn edit" @click.stop="editLeaveType(row)" title="Düzenle">✏️</button>
-        <button class="action-btn delete" @click.stop="deleteLeaveType(row)" title="Sil">🗑️</button>
+        <button class="action-btn edit" @click.stop="editDayType(row)" title="Düzenle">✏️</button>
+        <button class="action-btn delete" @click.stop="deleteDayType(row)" title="Sil">🗑️</button>
       </template>
     </DataTable>
 
@@ -99,37 +94,29 @@
         <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
           <div class="modal-container">
             <div class="modal-header">
-              <h3>{{ editingId ? 'İzin Türü Düzenle' : 'Yeni İzin Türü' }}</h3>
+              <h3>{{ editingId ? 'Gün Türü Düzenle' : 'Yeni Gün Türü' }}</h3>
               <button class="close-btn" @click="closeModal">✕</button>
             </div>
-            <form @submit.prevent="saveLeaveType" class="modal-body">
+            <form @submit.prevent="saveDayType" class="modal-body">
               <div class="form-group">
-                <label>İzin Türü Adı *</label>
-                <input v-model="form.name" type="text" required class="form-control" placeholder="Örn: Yıllık İzin" />
+                <label>Gün Türü Adı *</label>
+                <input v-model="form.name" type="text" required class="form-control" placeholder="Örn: Normal Gün" />
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Puantaj Kısaltması</label>
-                  <input v-model="form.abbreviation" type="text" maxlength="5" class="form-control" placeholder="Örn: Yİ" />
+                  <label>Puantaj Kısaltması *</label>
+                  <input v-model="form.abbreviation" type="text" required maxlength="5" class="form-control" placeholder="Örn: NG" />
                 </div>
                 <div class="form-group">
-                  <label>Gün Limiti</label>
-                  <input v-model.number="form.limitDays" type="number" min="0" class="form-control" placeholder="Sınırsız için boş bırakın" />
+                  <label>Renk</label>
+                  <input v-model="form.color" type="color" class="form-control color-input" />
                 </div>
               </div>
-              <div class="form-row checkbox-row">
-                <div class="form-group checkbox-group">
-                  <label>
-                    <input type="checkbox" v-model="form.isPaid" />
-                    Ücretli İzin
-                  </label>
-                </div>
-                <div class="form-group checkbox-group">
-                  <label>
-                    <input type="checkbox" v-model="form.deductsFromAnnual" />
-                    Yıllık İzinden Düşer
-                  </label>
-                </div>
+              <div class="form-group checkbox-group">
+                <label>
+                  <input type="checkbox" v-model="form.isActive" />
+                  Aktif
+                </label>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" @click="closeModal">İptal</button>
@@ -157,15 +144,31 @@ import { useConfirm } from '@/composables/useConfirm'
 const { success, error } = useToast()
 const { confirm } = useConfirm()
 
+// Types
+interface DayType {
+  id: number
+  name: string
+  abbreviation: string
+  color: string | null
+  isActive: boolean
+}
+
+interface DayTypeOptions {
+  page: number
+  limit: number
+  isActive?: boolean
+  search?: string
+}
+
 // State
 const loading = ref(false)
 const saving = ref(false)
 const showModal = ref(false)
 const editingId = ref<number | null>(null)
-const leaveTypes = ref<any[]>([])
+const dayTypes = ref<DayType[]>([])
 
 const filters = reactive({
-  isPaid: '',
+  isActive: '',
   search: ''
 })
 
@@ -178,63 +181,59 @@ const pagination = reactive({
 
 const stats = reactive({
   total: 0,
-  paid: 0,
-  unpaid: 0,
-  deducting: 0
+  active: 0,
+  inactive: 0
 })
 
 const form = reactive({
   name: '',
   abbreviation: '',
-  limitDays: null as number | null,
-  isPaid: true,
-  deductsFromAnnual: false
+  color: '#d4edda',
+  isActive: true
 })
 
 // Tablo kolonları
 const columns: TableColumn[] = [
-  { key: 'name', label: 'İzin Türü', sortable: true },
+  { key: 'name', label: 'Gün Türü', sortable: true },
   { key: 'abbreviation', label: 'Kısaltma', width: '100px' },
-  { key: 'isPaid', label: 'Ücret Durumu', width: '120px' },
-  { key: 'deductsFromAnnual', label: 'Yıllıktan Düşer', width: '130px' },
-  { key: 'limitDays', label: 'Gün Limiti', width: '100px' }
+  { key: 'color', label: 'Renk', width: '120px' },
+  { key: 'isActive', label: 'Durum', width: '100px' }
 ]
 
 // Methods
-const loadLeaveTypes = async () => {
+const loadDayTypes = async () => {
   loading.value = true
   try {
-    const options: any = {
+    const options: DayTypeOptions = {
       page: pagination.page,
       limit: pagination.limit
     }
     
-    if (filters.isPaid !== '') options.isPaid = filters.isPaid === 'true'
+    if (filters.isActive !== '') options.isActive = filters.isActive === 'true'
     if (filters.search) options.search = filters.search
 
-    const result = await window.electronAPI.leaveType.getAll(options)
+    const result = await window.electronAPI.dayType.getAll(options)
     
     if (result.success) {
-      leaveTypes.value = result.data || []
+      dayTypes.value = result.data || []
       pagination.total = result.total || 0
       pagination.totalPages = result.totalPages || 1
       updateStats()
     } else {
-      error(result.errors?.[0] || 'İzin türleri yüklenemedi')
+      error(result.errors?.[0] || 'Gün türleri yüklenemedi')
     }
-  } catch (err) {
-    error('İzin türleri yüklenirken hata oluştu')
+  } catch {
+    error('Gün türleri yüklenirken hata oluştu')
   } finally {
     loading.value = false
   }
 }
 
 const updateStats = () => {
-  const all = leaveTypes.value
+  const all = dayTypes.value
   stats.total = pagination.total
-  stats.paid = all.filter(t => t.isPaid).length
-  stats.unpaid = all.filter(t => !t.isPaid).length
-  stats.deducting = all.filter(t => t.deductsFromAnnual).length
+  stats.active = all.filter(t => t.isActive).length
+  stats.inactive = all.filter(t => !t.isActive).length
 }
 
 const openNewModal = () => {
@@ -243,13 +242,12 @@ const openNewModal = () => {
   showModal.value = true
 }
 
-const editLeaveType = (leaveType: any) => {
-  editingId.value = leaveType.id
-  form.name = leaveType.name
-  form.abbreviation = leaveType.abbreviation || ''
-  form.limitDays = leaveType.limitDays
-  form.isPaid = leaveType.isPaid
-  form.deductsFromAnnual = leaveType.deductsFromAnnual
+const editDayType = (dayType: DayType) => {
+  editingId.value = dayType.id
+  form.name = dayType.name
+  form.abbreviation = dayType.abbreviation
+  form.color = dayType.color || '#d4edda'
+  form.isActive = dayType.isActive
   showModal.value = true
 }
 
@@ -262,61 +260,59 @@ const closeModal = () => {
 const resetForm = () => {
   form.name = ''
   form.abbreviation = ''
-  form.limitDays = null
-  form.isPaid = true
-  form.deductsFromAnnual = false
+  form.color = '#d4edda'
+  form.isActive = true
 }
 
-const saveLeaveType = async () => {
+const saveDayType = async () => {
   saving.value = true
   try {
     const data = {
       name: form.name,
-      abbreviation: form.abbreviation || null,
-      limitDays: form.limitDays,
-      isPaid: form.isPaid,
-      deductsFromAnnual: form.deductsFromAnnual
+      abbreviation: form.abbreviation,
+      color: form.color,
+      isActive: form.isActive
     }
 
     let result
     if (editingId.value) {
-      result = await window.electronAPI.leaveType.update(editingId.value, data)
+      result = await window.electronAPI.dayType.update(editingId.value, data)
     } else {
-      result = await window.electronAPI.leaveType.create(data)
+      result = await window.electronAPI.dayType.create(data)
     }
 
     if (result && result.success) {
-      success(editingId.value ? 'İzin türü güncellendi' : 'İzin türü oluşturuldu')
+      success(editingId.value ? 'Gün türü güncellendi' : 'Gün türü oluşturuldu')
       closeModal()
-      loadLeaveTypes()
+      loadDayTypes()
     } else {
       error(result?.errors?.[0] || 'İşlem başarısız')
     }
-  } catch (err) {
+  } catch {
     error('Kayıt sırasında hata oluştu')
   } finally {
     saving.value = false
   }
 }
 
-const deleteLeaveType = async (leaveType: any) => {
+const deleteDayType = async (dayType: DayType) => {
   const confirmed = await confirm({
-    title: 'İzin Türünü Sil',
-    message: `"${leaveType.name}" izin türünü silmek istediğinize emin misiniz?`,
+    title: 'Gün Türünü Sil',
+    message: `"${dayType.name}" gün türünü silmek istediğinize emin misiniz?`,
     confirmText: 'Sil',
     type: 'danger'
   })
 
   if (confirmed) {
     try {
-      const result = await window.electronAPI.leaveType.delete(leaveType.id)
+      const result = await window.electronAPI.dayType.delete(dayType.id)
       if (result && result.success) {
-        success('İzin türü silindi')
-        loadLeaveTypes()
+        success('Gün türü silindi')
+        loadDayTypes()
       } else {
         error(result?.errors?.[0] || 'Silme başarısız')
       }
-    } catch (err) {
+    } catch {
       error('Silme sırasında hata oluştu')
     }
   }
@@ -324,22 +320,22 @@ const deleteLeaveType = async (leaveType: any) => {
 
 const seedDefaults = async () => {
   const confirmed = await confirm({
-    title: 'Varsayılan İzin Türleri',
-    message: 'Varsayılan izin türlerini yüklemek istiyor musunuz? Mevcut türler etkilenmez.',
+    title: 'Varsayılan Gün Türleri',
+    message: 'Varsayılan gün türlerini yüklemek istiyor musunuz? Mevcut türler etkilenmez.',
     confirmText: 'Yükle',
     type: 'info'
   })
 
   if (confirmed) {
     try {
-      const result = await window.electronAPI.leaveType.seedDefaults()
+      const result = await window.electronAPI.dayType.seedDefaults()
       if (result && result.success) {
-        success(result.message || 'Varsayılan izin türleri yüklendi')
-        loadLeaveTypes()
+        success(result.message || 'Varsayılan gün türleri yüklendi')
+        loadDayTypes()
       } else {
         error(result?.errors?.[0] || 'Yükleme başarısız')
       }
-    } catch (err) {
+    } catch {
       error('Yükleme sırasında hata oluştu')
     }
   }
@@ -347,32 +343,21 @@ const seedDefaults = async () => {
 
 const handlePageChange = (page: number) => {
   pagination.page = page
-  loadLeaveTypes()
+  loadDayTypes()
 }
 
 const handlePrint = () => window.print()
 const handlePdf = () => success('PDF oluşturma özelliği yakında eklenecek')
 const handleExcelExport = () => success('Excel export özelliği yakında eklenecek')
 
-// Helpers
-const getTypeIcon = (leaveType: any) => {
-  if (leaveType.name?.includes('Yıllık')) return '🏖️'
-  if (leaveType.name?.includes('Mazeret')) return '📝'
-  if (leaveType.name?.includes('Doğum')) return '👶'
-  if (leaveType.name?.includes('Evlilik')) return '💒'
-  if (leaveType.name?.includes('Ölüm') || leaveType.name?.includes('Vefat')) return '🕯️'
-  if (leaveType.name?.includes('Hastalık') || leaveType.name?.includes('Rapor')) return '🏥'
-  return '📋'
-}
-
 // Lifecycle
 onMounted(() => {
-  loadLeaveTypes()
+  loadDayTypes()
 })
 </script>
 
 <style scoped>
-.leave-type-page {
+.day-type-page {
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -405,27 +390,11 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-.type-icon {
-  font-size: 1.2rem;
-}
-
-.badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
+.type-color {
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.badge-success { background: #d4edda; color: #155724; }
-.badge-warning { background: #fff3cd; color: #856404; }
-.badge-info { background: #d1ecf1; color: #0c5460; }
-.badge-primary { background: #cce5ff; color: #004085; }
-.badge-secondary { background: #e9ecef; color: #495057; }
-
-.day-value {
-  font-weight: 600;
-  color: #0466c8;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .abbrev-badge {
@@ -438,9 +407,24 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.text-muted {
-  color: #6c757d;
+.color-preview {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-success { background: #d4edda; color: #155724; }
+.badge-warning { background: #fff3cd; color: #856404; }
 
 .action-btn {
   padding: 0.375rem 0.5rem;
@@ -533,14 +517,16 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(4, 102, 200, 0.1);
 }
 
+.color-input {
+  height: 42px;
+  padding: 4px;
+  cursor: pointer;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-}
-
-.checkbox-row {
-  margin-top: 0.5rem;
 }
 
 .checkbox-group label {

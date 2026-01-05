@@ -189,9 +189,9 @@ export class AttendanceController extends BaseController {
    * Durum ayarla
    * Requirements: 7.3
    */
-  async setStatus(logId: number, status: string, userId?: number): Promise<any> {
+  async setStatus(logId: number, status: string, leaveTypeId?: number | null, userId?: number): Promise<any> {
     try {
-      const attendance = await this.service.setStatus(logId, status as any, userId)
+      const attendance = await this.service.setStatus(logId, status as any, leaveTypeId, userId)
       return this.success(attendance, 'Durum başarıyla güncellendi')
     } catch (error) {
       if (error instanceof BusinessRuleError || error instanceof ValidationError) {

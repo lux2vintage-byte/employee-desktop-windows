@@ -23,3 +23,5 @@ export { setupDisciplinaryHandlers, initializeDisciplinaryController } from './d
 export { setupOffboardingHandlers, initializeOffboardingController } from './offboarding-handlers'
 export { setupSettingsHandlers, initializeSettingsController } from './settings-handlers'
 export { setupReportHandlers, initializeReportController } from './report-handlers'
+export { setupDayTypeHandlers, initializeDayTypeController } from './day-type-handlers'
+export { setupCalendarHandlers } from './calendar-handlers'

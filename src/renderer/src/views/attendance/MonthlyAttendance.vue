@@ -54,6 +54,17 @@
       </div>
     </div>
 
+    <!-- Lejant -->
+    <div class="legend-bar">
+      <div class="legend-title">📋 Lejant:</div>
+      <div class="legend-items">
+        <div class="legend-item" v-for="dt in activeDayTypes" :key="dt.id" :style="{ backgroundColor: dt.color || '#e9ecef' }">
+          <span class="legend-abbr">{{ dt.abbreviation }}</span>
+          <span class="legend-name">{{ dt.name }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Puantaj Tablosu -->
     <div class="puantaj-container" v-if="!loading">
       <div class="table-scroll-wrapper">
@@ -61,16 +72,22 @@
           <thead>
             <tr>
               <th class="sticky-col employee-col">Personel</th>
-              <th v-for="day in daysInMonth" :key="day" :class="getDayClass(day)" class="day-col">
+              <th v-for="day in daysInMonth" :key="day" 
+                  :class="['day-col', getDayClass(day)]" 
+                  :style="getDayHeaderStyle(day)"
+                  :title="calendarHolidays[day]?.name || 'Normal Gün'">
                 <div class="day-header">
                   <span class="day-number">{{ day }}</span>
                   <span class="day-name">{{ getDayName(day) }}</span>
+                  <span v-if="calendarHolidays[day]" class="day-abbr">{{ calendarHolidays[day]?.abbreviation }}</span>
                 </div>
               </th>
               <th class="summary-col">Geldi</th>
               <th class="summary-col">Gelmedi</th>
-              <th class="summary-col">İzin</th>
               <th class="summary-col">Mesai</th>
+              <th v-for="col in dynamicSummaryColumns" :key="col.key" class="summary-col dynamic-col" :title="col.name">
+                {{ col.name.length > 8 ? col.name.substring(0, 8) + '...' : col.name }}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -84,14 +101,19 @@
                   </div>
                 </div>
               </td>
-              <td v-for="day in daysInMonth" :key="day" :class="getCellClass(emp, day)" class="day-cell"
+              <td v-for="day in daysInMonth" :key="day" 
+                  :class="['day-cell', getCellClass(emp, day)]"
+                  :style="getCellStyle(emp, day)"
+                  :title="getDayTooltip(emp, day)"
                   @click="openDayDetail(emp, day)">
                 <span class="cell-status">{{ getCellStatus(emp, day) }}</span>
               </td>
               <td class="summary-cell success">{{ emp.summary.present }}</td>
               <td class="summary-cell danger">{{ emp.summary.absent }}</td>
-              <td class="summary-cell warning">{{ emp.summary.leave }}</td>
               <td class="summary-cell info">{{ emp.summary.overtime }}s</td>
+              <td v-for="col in dynamicSummaryColumns" :key="col.key" class="summary-cell dynamic-cell" :class="col.type === 'leave' ? 'leave-type' : 'day-type'">
+                {{ emp.summary.types[col.key]?.count || 0 }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -105,19 +127,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatCard from '@/components/StatCard.vue'
 import { useToast } from '@/composables/useToast'
+import type { HolidayInfo } from '@/types/electron'
 
 const { success, error } = useToast()
 
+// Types
+interface Employee {
+  id: number
+  firstName: string
+  lastName: string
+  employeeCode: string
+  departmentId: number
+}
+
+interface DayType {
+  id: number
+  name: string
+  abbreviation: string
+  color: string | null
+  isActive: boolean
+}
+
+interface Department {
+  id: number
+  name: string
+}
+
+interface LeaveType {
+  id: number
+  name: string
+  abbreviation: string | null
+}
+
+interface AttendanceRecord {
+  id: number
+  employeeId: number
+  date: string
+  status: string
+  leaveType?: LeaveType | null
+  dayType?: DayType | null
+}
+
+interface OvertimeRecord {
+  id: number
+  employeeId: number
+  hours: number
+  approvalStatus: string
+}
+
 // State
 const loading = ref(false)
-const employees = ref<any[]>([])
-const departments = ref<any[]>([])
-const attendanceData = ref<any[]>([])
-const overtimeData = ref<any[]>([])
+const employees = ref<Employee[]>([])
+const departments = ref<Department[]>([])
+const attendanceData = ref<AttendanceRecord[]>([])
+const overtimeData = ref<OvertimeRecord[]>([])
+const leaveTypes = ref<LeaveType[]>([])
+const dayTypes = ref<DayType[]>([])
+const calendarHolidays = ref<Record<number, HolidayInfo | null>>({}) // Takvim tatilleri
 
 const currentDate = new Date()
 const selectedMonth = ref(currentDate.getMonth() + 1)
@@ -143,6 +213,11 @@ const months = [
 const years = computed(() => {
   const current = new Date().getFullYear()
   return [current - 2, current - 1, current, current + 1]
+})
+
+// Lejant için aktif gün türleri
+const activeDayTypes = computed(() => {
+  return dayTypes.value.filter(dt => dt.isActive)
 })
 
 const daysInMonth = computed(() => {
@@ -171,11 +246,33 @@ const employeeAttendance = computed(() => {
       dayMap[day] = a
     })
     
+    // Dinamik özet: izin türleri ve gün türleri sayımı
+    const typeSummary: Record<string, { name: string, count: number, type: 'leave' | 'day' }> = {}
+    
+    // İzin türlerini say
+    empAttendance.forEach(a => {
+      if (a.status === 'İzinli' && a.leaveType) {
+        const key = `leave_${a.leaveType.id}`
+        if (!typeSummary[key]) {
+          typeSummary[key] = { name: a.leaveType.name, count: 0, type: 'leave' }
+        }
+        typeSummary[key].count++
+      }
+      if (a.dayType) {
+        const key = `day_${a.dayType.id}`
+        if (!typeSummary[key]) {
+          typeSummary[key] = { name: a.dayType.name, count: 0, type: 'day' }
+        }
+        typeSummary[key].count++
+      }
+    })
+    
     const summary = {
       present: empAttendance.filter(a => a.status === 'Geldi').length,
       absent: empAttendance.filter(a => a.status === 'Gelmedi').length,
       leave: empAttendance.filter(a => a.status === 'İzinli').length,
-      overtime: empOvertime.reduce((sum, o) => sum + o.hours, 0)
+      overtime: empOvertime.reduce((sum, o) => sum + o.hours, 0),
+      types: typeSummary
     }
     
     return {
@@ -189,6 +286,28 @@ const employeeAttendance = computed(() => {
   })
 })
 
+// Dinamik özet sütunları hesapla
+const dynamicSummaryColumns = computed(() => {
+  const columns: { key: string, name: string, type: 'leave' | 'day' }[] = []
+  const seen = new Set<string>()
+  
+  // Tüm personellerin özet verilerini topla
+  employeeAttendance.value.forEach(emp => {
+    Object.entries(emp.summary.types || {}).forEach(([key, value]: [string, any]) => {
+      if (!seen.has(key)) {
+        seen.add(key)
+        columns.push({ key, name: value.name, type: value.type })
+      }
+    })
+  })
+  
+  // İzin türlerini önce, sonra gün türlerini sırala
+  return columns.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'leave' ? -1 : 1
+    return a.name.localeCompare(b.name, 'tr')
+  })
+})
+
 // Methods
 const loadMonthlyData = async () => {
   loading.value = true
@@ -197,6 +316,9 @@ const loadMonthlyData = async () => {
     startDate.setHours(0, 0, 0, 0)
     const endDate = new Date(selectedYear.value, selectedMonth.value, 0)
     endDate.setHours(23, 59, 59, 999)
+    
+    // Takvim tatillerini yükle
+    await loadCalendarHolidays()
     
     // Puantaj verilerini yükle
     const attendanceResult = await window.electronAPI.attendance.getAll({
@@ -221,10 +343,24 @@ const loadMonthlyData = async () => {
     }
     
     updateStats()
-  } catch (err) {
+  } catch {
     error('Veriler yüklenirken hata oluştu')
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * Takvim tatillerini yükle (Resmi bayramlar, dini bayramlar, arefeler, hafta tatilleri)
+ */
+const loadCalendarHolidays = async () => {
+  try {
+    const result = await window.electronAPI.calendar.getDayTypeMap(selectedYear.value, selectedMonth.value)
+    if (result.success) {
+      calendarHolidays.value = result.data || {}
+    }
+  } catch {
+    console.error('Takvim tatilleri yüklenemedi')
   }
 }
 
@@ -235,8 +371,8 @@ const loadEmployees = async () => {
       employees.value = result.data
       stats.totalEmployees = result.data.length
     }
-  } catch (err) {
-    console.error('Personeller yüklenemedi:', err)
+  } catch {
+    console.error('Personeller yüklenemedi')
   }
 }
 
@@ -246,17 +382,41 @@ const loadDepartments = async () => {
     if (result.success) {
       departments.value = result.data
     }
-  } catch (err) {
-    console.error('Departmanlar yüklenemedi:', err)
+  } catch {
+    console.error('Departmanlar yüklenemedi')
+  }
+}
+
+const loadLeaveTypes = async () => {
+  try {
+    const result = await window.electronAPI.leaveType.getAll({ limit: 100 })
+    if (result.success) {
+      leaveTypes.value = result.data || []
+    }
+  } catch {
+    console.error('İzin türleri yüklenemedi')
+  }
+}
+
+const loadDayTypes = async () => {
+  try {
+    const result = await window.electronAPI.dayType.getActive()
+    if (result.success) {
+      dayTypes.value = result.data || []
+    }
+  } catch {
+    console.error('Gün türleri yüklenemedi')
   }
 }
 
 const updateStats = () => {
-  // İş günü hesapla (hafta sonları hariç)
+  // İş günü hesapla (tatiller hariç - takvimden)
   let workingDays = 0
   daysInMonth.value.forEach(day => {
-    const date = new Date(selectedYear.value, selectedMonth.value - 1, day)
-    if (date.getDay() !== 0 && date.getDay() !== 6) workingDays++
+    const holiday = calendarHolidays.value[day]
+    if (!holiday) {
+      workingDays++
+    }
   })
   stats.workingDays = workingDays
   
@@ -271,12 +431,42 @@ const updateStats = () => {
     .reduce((sum, o) => sum + o.hours, 0)
 }
 
-const getDayClass = (day: number) => {
-  const date = new Date(selectedYear.value, selectedMonth.value - 1, day)
-  const dayOfWeek = date.getDay()
-  if (dayOfWeek === 0) return 'weekend sunday'
-  if (dayOfWeek === 6) return 'weekend saturday'
+/**
+ * Gün başlığı sınıfını hesapla (takvimden tatil bilgisi ile)
+ */
+const getDayClass = (day: number): string => {
+  const holiday = calendarHolidays.value[day]
+  if (holiday) {
+    // Tatil türüne göre sınıf döndür
+    switch (holiday.type) {
+      case 'hafta_tatili':
+        return 'weekend sunday'
+      case 'resmi_bayram':
+        return 'holiday official'
+      case 'dini_bayram':
+        return 'holiday religious'
+      case 'arefe':
+        return 'holiday arefe'
+      default:
+        return ''
+    }
+  }
   return ''
+}
+
+/**
+ * Gün başlığı stilini hesapla (Gün Türleri tablosundan renk)
+ */
+const getDayHeaderStyle = (day: number): Record<string, string> => {
+  const holiday = calendarHolidays.value[day]
+  if (holiday) {
+    // Gün Türleri tablosundan eşleşen rengi bul
+    const matchingDayType = dayTypes.value.find(dt => dt.abbreviation === holiday.abbreviation)
+    if (matchingDayType?.color) {
+      return { backgroundColor: matchingDayType.color }
+    }
+  }
+  return {}
 }
 
 const getDayName = (day: number) => {
@@ -285,33 +475,147 @@ const getDayName = (day: number) => {
   return names[date.getDay()]
 }
 
-const getCellClass = (emp: any, day: number) => {
-  const record = emp.days[day]
-  if (!record) return 'empty'
-  
-  const classes: Record<string, string> = {
-    'Geldi': 'present',
-    'Gelmedi': 'absent',
-    'İzinli': 'leave',
-    'Tatil': 'holiday'
+/**
+ * Gün hücresinin CSS sınıfını hesapla
+ * Öncelik: Puantaj kaydı > Takvim tatili
+ */
+interface EmployeeAttendanceRow {
+  employeeId: number
+  name: string
+  code: string
+  initials: string
+  days: Record<number, AttendanceRecord | undefined>
+  summary: {
+    present: number
+    absent: number
+    leave: number
+    overtime: number
+    types: Record<string, { name: string; count: number; type: 'leave' | 'day' }>
   }
-  return classes[record.status] || 'empty'
 }
 
-const getCellStatus = (emp: any, day: number) => {
+const getCellClass = (emp: EmployeeAttendanceRow, day: number): string => {
   const record = emp.days[day]
-  if (!record) return ''
   
-  const symbols: Record<string, string> = {
-    'Geldi': '✓',
-    'Gelmedi': '✗',
-    'İzinli': 'İ',
-    'Tatil': 'T'
+  // Puantaj kaydı varsa ona göre sınıf döndür
+  if (record) {
+    const classes: Record<string, string> = {
+      'Geldi': 'present',
+      'Gelmedi': 'absent',
+      'İzinli': 'leave',
+      'Tatil': 'holiday'
+    }
+    return classes[record.status] || 'empty'
   }
-  return symbols[record.status] || ''
+  
+  // Puantaj kaydı yoksa takvimden tatil durumunu kontrol et
+  const holiday = calendarHolidays.value[day]
+  if (holiday) {
+    switch (holiday.type) {
+      case 'hafta_tatili':
+        return 'calendar-weekend'
+      case 'resmi_bayram':
+        return 'calendar-official'
+      case 'dini_bayram':
+        return 'calendar-religious'
+      case 'arefe':
+        return 'calendar-arefe'
+      default:
+        return 'empty'
+    }
+  }
+  
+  return 'empty'
 }
 
-const openDayDetail = (emp: any, day: number) => {
+/**
+ * Gün hücresinin dinamik stilini hesapla (Gün Türleri tablosundan renk)
+ */
+const getCellStyle = (emp: EmployeeAttendanceRow, day: number): Record<string, string> => {
+  const record = emp.days[day]
+  
+  // Puantaj kaydı varsa ve dayType rengi varsa onu kullan
+  if (record?.dayType?.color) {
+    return { backgroundColor: record.dayType.color }
+  }
+  
+  // Puantaj kaydı yoksa takvimden tatil bilgisi al ve Gün Türleri tablosundan renk bul
+  if (!record) {
+    const holiday = calendarHolidays.value[day]
+    if (holiday) {
+      // Gün Türleri tablosundan eşleşen rengi bul
+      const matchingDayType = dayTypes.value.find(dt => dt.abbreviation === holiday.abbreviation)
+      if (matchingDayType?.color) {
+        return { backgroundColor: matchingDayType.color }
+      }
+    }
+  }
+  
+  return {}
+}
+
+/**
+ * Gün hücresinde gösterilecek kısaltmayı hesapla
+ */
+const getCellStatus = (emp: EmployeeAttendanceRow, day: number): string => {
+  const record = emp.days[day]
+  
+  // Puantaj kaydı varsa
+  if (record) {
+    // İzinli durumunda izin türü kısaltmasını göster
+    if (record.status === 'İzinli' && record.leaveType?.abbreviation) {
+      return record.leaveType.abbreviation
+    }
+    
+    // Gün türü varsa kısaltmasını göster
+    if (record.dayType?.abbreviation) {
+      return record.dayType.abbreviation
+    }
+    
+    // Varsayılan semboller
+    const symbols: Record<string, string> = {
+      'Geldi': '✓',
+      'Gelmedi': '✗',
+      'İzinli': 'İ',
+      'Tatil': 'T'
+    }
+    return symbols[record.status] || ''
+  }
+  
+  // Puantaj kaydı yoksa takvimden kısaltma al
+  const holiday = calendarHolidays.value[day]
+  if (holiday) {
+    return holiday.abbreviation
+  }
+  
+  return ''
+}
+
+/**
+ * Gün için tooltip göster
+ */
+const getDayTooltip = (emp: EmployeeAttendanceRow, day: number): string => {
+  const record = emp.days[day]
+  
+  if (record) {
+    if (record.dayType?.name) {
+      return record.dayType.name
+    }
+    if (record.leaveType?.name) {
+      return record.leaveType.name
+    }
+    return record.status
+  }
+  
+  const holiday = calendarHolidays.value[day]
+  if (holiday) {
+    return holiday.name
+  }
+  
+  return 'Normal Gün'
+}
+
+const openDayDetail = (emp: EmployeeAttendanceRow, day: number) => {
   // Gün detayı modalı açılabilir
   console.log('Day detail:', emp.name, day)
 }
@@ -324,11 +628,31 @@ const exportToExcel = () => {
   success('Excel export özelliği yakında eklenecek')
 }
 
+/**
+ * Sayfa aktif olduğunda gün türlerini yeniden yükle
+ * Bu sayede Gün Türleri sayfasında yapılan değişiklikler anında yansır
+ */
+const handleVisibilityChange = async () => {
+  if (document.visibilityState === 'visible') {
+    await loadDayTypes()
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await loadEmployees()
   await loadDepartments()
+  await loadLeaveTypes()
+  await loadDayTypes()
   await loadMonthlyData()
+  
+  // Sayfa görünür olduğunda gün türlerini güncelle
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  // Event listener'ı temizle
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
@@ -343,6 +667,51 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* Lejant */
+.legend-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+.legend-title {
+  font-weight: 600;
+  color: #495057;
+  margin-right: 0.5rem;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-abbr {
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+.legend-name {
+  color: #495057;
 }
 
 .filters-bar {
@@ -565,6 +934,49 @@ onMounted(async () => {
   background: #f8f9fa;
 }
 
+/* Takvim bazlı tatil stilleri (puantaj kaydı olmayan günler için) */
+.day-cell.calendar-weekend {
+  background: #fff3cd;
+}
+
+.day-cell.calendar-official {
+  background: #cce5ff;
+}
+
+.day-cell.calendar-religious {
+  background: #d1ecf1;
+}
+
+.day-cell.calendar-arefe {
+  background: #e2e3e5;
+}
+
+/* Gün başlığı tatil stilleri */
+.day-col.holiday {
+  border-bottom: 3px solid;
+}
+
+.day-col.holiday.official {
+  border-bottom-color: #004085;
+}
+
+.day-col.holiday.religious {
+  border-bottom-color: #0c5460;
+}
+
+.day-col.holiday.arefe {
+  border-bottom-color: #6c757d;
+}
+
+.day-abbr {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #495057;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 .cell-status {
   font-weight: 700;
   font-size: 0.9rem;
@@ -574,6 +986,10 @@ onMounted(async () => {
 .day-cell.absent .cell-status { color: #721c24; }
 .day-cell.leave .cell-status { color: #856404; }
 .day-cell.holiday .cell-status { color: #004085; }
+.day-cell.calendar-weekend .cell-status { color: #856404; }
+.day-cell.calendar-official .cell-status { color: #004085; }
+.day-cell.calendar-religious .cell-status { color: #0c5460; }
+.day-cell.calendar-arefe .cell-status { color: #495057; }
 
 .summary-cell {
   font-weight: 700;
@@ -583,6 +999,18 @@ onMounted(async () => {
 .summary-cell.danger { color: #721c24; background: #f8d7da; }
 .summary-cell.warning { color: #856404; background: #fff3cd; }
 .summary-cell.info { color: #004085; background: #cce5ff; }
+
+.summary-cell.leave-type { color: #856404; background: #fff3cd; }
+.summary-cell.day-type { color: #0c5460; background: #d1ecf1; }
+
+.dynamic-col {
+  min-width: 70px;
+  font-size: 0.75rem;
+}
+
+.dynamic-cell {
+  font-size: 0.85rem;
+}
 
 .loading-container {
   display: flex;
@@ -610,7 +1038,8 @@ onMounted(async () => {
 
 @media print {
   .filters-bar,
-  .stats-grid {
+  .stats-grid,
+  .legend-bar {
     display: none !important;
   }
   

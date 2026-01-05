@@ -148,12 +148,36 @@ export interface Overtime {
 export interface LeaveType {
   id: number;
   name: string;
+  abbreviation: string | null;
   isPaid: boolean;
   deductsFromAnnual: boolean;
   limitDays: number | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+}
+
+export interface DayType {
+  id: number;
+  name: string;
+  abbreviation: string;
+  color: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+// Tatil türü
+export type HolidayType = 'resmi_bayram' | 'dini_bayram' | 'arefe' | 'hafta_tatili' | 'normal_gun';
+
+// Tatil bilgisi
+export interface HolidayInfo {
+  date: string; // YYYY-MM-DD formatında
+  name: string;
+  type: HolidayType;
+  abbreviation: string;
+  color: string;
 }
 
 export interface LeaveRequest {
@@ -569,9 +593,10 @@ declare global {
         checkIn: (employeeId: number, time?: string) => Promise<ApiResponse<AttendanceLog>>;
         checkOut: (employeeId: number, time?: string) => Promise<ApiResponse<AttendanceLog>>;
         setBreakDuration: (logId: number, minutes: number, userId?: number) => Promise<ApiResponse<AttendanceLog>>;
-        setStatus: (logId: number, status: string, userId?: number) => Promise<ApiResponse<AttendanceLog>>;
+        setStatus: (logId: number, status: string, leaveTypeId?: number, userId?: number) => Promise<ApiResponse<AttendanceLog>>;
         bulkCreate: (records: any[], userId?: number) => Promise<ApiResponse<AttendanceLog[]>>;
         getMonthlyReport: (employeeId: number, month: number, year: number) => Promise<ApiResponse<any>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<AttendanceLog>>;
       };
 
       // Fazla mesai işlemleri
@@ -599,6 +624,27 @@ declare global {
         update: (id: number, data: any, userId?: number) => Promise<ApiResponse<LeaveType>>;
         delete: (id: number, userId?: number) => Promise<ApiResponse<LeaveType>>;
         seedDefaults: (userId?: number) => Promise<ApiResponse<LeaveType[]>>;
+      };
+
+      // Gün türü işlemleri
+      dayType: {
+        getAll: (options?: any) => Promise<PaginatedResult<DayType>>;
+        getById: (id: number) => Promise<ApiResponse<DayType | null>>;
+        getActive: () => Promise<ApiResponse<DayType[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<DayType>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<DayType>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<DayType>>;
+        seedDefaults: (userId?: number) => Promise<ApiResponse<DayType[]>>;
+      };
+
+      // Takvim / Tatil işlemleri
+      calendar: {
+        getHolidaysForMonth: (year: number, month: number) => Promise<ApiResponse<HolidayInfo[]>>;
+        getHolidaysForYear: (year: number) => Promise<ApiResponse<HolidayInfo[]>>;
+        getDayType: (year: number, month: number, day: number) => Promise<ApiResponse<HolidayInfo | null>>;
+        getDayTypeMap: (year: number, month: number) => Promise<ApiResponse<Record<number, HolidayInfo | null>>>;
+        getWorkingDays: (year: number, month: number) => Promise<ApiResponse<number>>;
+        getHolidaysInRange: (startDate: string, endDate: string) => Promise<ApiResponse<HolidayInfo[]>>;
       };
 
       // İzin talebi işlemleri

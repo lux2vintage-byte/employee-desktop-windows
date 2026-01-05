@@ -259,12 +259,12 @@ const saveLeaveType = async () => {
       ? await window.electronAPI.leaveType.update(form.id!, data)
       : await window.electronAPI.leaveType.create(data)
     
-    if (result) {
+    if (result && result.success) {
       success(isEditing.value ? 'İzin türü güncellendi' : 'İzin türü oluşturuldu')
       closeModal()
       await loadLeaveTypes()
     } else {
-      error('İşlem başarısız')
+      error(result?.errors?.[0] || 'İşlem başarısız')
     }
   } catch (err) {
     error('Kaydetme sırasında hata oluştu')
@@ -283,9 +283,13 @@ const deleteLeaveType = async (leaveType: any) => {
   
   if (confirmed) {
     try {
-      await window.electronAPI.leaveType.delete(leaveType.id)
-      success('İzin türü silindi')
-      await loadLeaveTypes()
+      const result = await window.electronAPI.leaveType.delete(leaveType.id)
+      if (result && result.success) {
+        success('İzin türü silindi')
+        await loadLeaveTypes()
+      } else {
+        error(result?.errors?.[0] || 'Silme işlemi başarısız')
+      }
     } catch (err) {
       error('Silme sırasında hata oluştu')
     }
@@ -304,9 +308,11 @@ const seedDefaults = async () => {
     loading.value = true
     try {
       const result = await window.electronAPI.leaveType.seedDefaults()
-      if (result) {
+      if (result && result.success) {
         success('Varsayılan izin türleri yüklendi')
         await loadLeaveTypes()
+      } else {
+        error(result?.errors?.[0] || 'Yükleme başarısız')
       }
     } catch (err) {
       error('Yükleme sırasında hata oluştu')

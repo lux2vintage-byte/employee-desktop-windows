@@ -128,8 +128,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     checkOut: (employeeId: number, time?: string) => ipcRenderer.invoke('attendance-check-out', employeeId, time),
     setBreakDuration: (logId: number, minutes: number, userId?: number) =>
       ipcRenderer.invoke('attendance-set-break-duration', logId, minutes, userId),
-    setStatus: (logId: number, status: string, userId?: number) =>
-      ipcRenderer.invoke('attendance-set-status', logId, status, userId),
+    setStatus: (logId: number, status: string, leaveTypeId?: number | null, userId?: number) =>
+      ipcRenderer.invoke('attendance-set-status', logId, status, leaveTypeId, userId),
+    delete: (id: number, userId?: number) => ipcRenderer.invoke('attendance-delete', id, userId),
     bulkCreate: (records: any[], userId?: number) =>
       ipcRenderer.invoke('attendance-bulk-create', records, userId),
     getMonthlyReport: (employeeId: number, month: number, year: number) =>
@@ -164,6 +165,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
     update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('leave-type-update', id, data, userId),
     delete: (id: number, userId?: number) => ipcRenderer.invoke('leave-type-delete', id, userId),
     seedDefaults: (userId?: number) => ipcRenderer.invoke('leave-type-seed-defaults', userId),
+  },
+
+  // ==================== GÜN TÜRÜ İŞLEMLERİ ====================
+  dayType: {
+    getAll: (options?: any) => ipcRenderer.invoke('day-type-get-all', options),
+    getById: (id: number) => ipcRenderer.invoke('day-type-get-by-id', id),
+    getActive: () => ipcRenderer.invoke('day-type-get-active'),
+    create: (data: any, userId?: number) => ipcRenderer.invoke('day-type-create', data, userId),
+    update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('day-type-update', id, data, userId),
+    delete: (id: number, userId?: number) => ipcRenderer.invoke('day-type-delete', id, userId),
+    seedDefaults: (userId?: number) => ipcRenderer.invoke('day-type-seed-defaults', userId),
+  },
+
+  // ==================== TAKVİM / TATİL İŞLEMLERİ ====================
+  calendar: {
+    getHolidaysForMonth: (year: number, month: number) => 
+      ipcRenderer.invoke('calendar-get-holidays-for-month', year, month),
+    getHolidaysForYear: (year: number) => 
+      ipcRenderer.invoke('calendar-get-holidays-for-year', year),
+    getDayType: (year: number, month: number, day: number) => 
+      ipcRenderer.invoke('calendar-get-day-type', year, month, day),
+    getDayTypeMap: (year: number, month: number) => 
+      ipcRenderer.invoke('calendar-get-day-type-map', year, month),
+    getWorkingDays: (year: number, month: number) => 
+      ipcRenderer.invoke('calendar-get-working-days', year, month),
+    getHolidaysInRange: (startDate: string, endDate: string) => 
+      ipcRenderer.invoke('calendar-get-holidays-in-range', startDate, endDate),
   },
 
   // ==================== İZİN TALEBİ İŞLEMLERİ ====================

@@ -106,6 +106,11 @@ const router = createRouter({
       component: () => import('../views/leave/LeaveTypeList.vue'),
     },
     {
+      path: '/day-types',
+      name: 'day-types',
+      component: () => import('../views/leave/DayTypeList.vue'),
+    },
+    {
       path: '/leave-balances',
       name: 'leave-balances',
       component: () => import('../views/leave/LeaveBalanceList.vue'),

@@ -53,10 +53,13 @@
         <div class="filter-group">
           <select v-model="filterType" @change="loadParameters" class="filter-select">
             <option value="">Tüm Tipler</option>
-            <option value="SGK">SGK Oranları</option>
-            <option value="TAX">Vergi Dilimleri</option>
-            <option value="MINIMUM_WAGE">Asgari Ücret</option>
-            <option value="OTHER">Diğer</option>
+            <option value="SGKEmployeeRate">SGK İşçi</option>
+            <option value="SGKEmployerRate">SGK İşveren</option>
+            <option value="IncomeTaxBracket">Vergi Dilimleri</option>
+            <option value="MinimumWage">Asgari Ücret</option>
+            <option value="StampTax">Damga Vergisi</option>
+            <option value="UnemploymentEmployee">İşsizlik İşçi</option>
+            <option value="UnemploymentEmployer">İşsizlik İşveren</option>
           </select>
         </div>
         <div class="filter-group">
@@ -119,10 +122,13 @@
                   <label>Parametre Tipi *</label>
                   <select v-model="form.parameterType" required class="form-control">
                     <option value="">Seçin</option>
-                    <option value="SGK">SGK Oranları</option>
-                    <option value="TAX">Vergi Dilimleri</option>
-                    <option value="MINIMUM_WAGE">Asgari Ücret</option>
-                    <option value="OTHER">Diğer</option>
+                    <option value="MinimumWage">Asgari Ücret</option>
+                    <option value="SGKEmployeeRate">SGK İşçi Payı</option>
+                    <option value="SGKEmployerRate">SGK İşveren Payı</option>
+                    <option value="IncomeTaxBracket">Gelir Vergisi Dilimi</option>
+                    <option value="StampTax">Damga Vergisi</option>
+                    <option value="UnemploymentEmployee">İşsizlik Sigortası İşçi</option>
+                    <option value="UnemploymentEmployer">İşsizlik Sigortası İşveren</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -133,22 +139,14 @@
                   </select>
                 </div>
               </div>
-              <div class="form-group">
-                <label>Parametre Adı *</label>
-                <input v-model="form.parameterName" type="text" required class="form-control" placeholder="Örn: SGK İşçi Payı" />
-              </div>
               <div class="form-row">
                 <div class="form-group">
+                  <label>Parametre Adı *</label>
+                  <input v-model="form.parameterKey" type="text" required class="form-control" placeholder="Örn: Brüt Ücret, 1. Dilim Oranı" />
+                </div>
+                <div class="form-group">
                   <label>Değer *</label>
-                  <input v-model.number="form.value" type="number" step="0.01" required class="form-control" />
-                </div>
-                <div class="form-group">
-                  <label>Min Değer</label>
-                  <input v-model.number="form.minValue" type="number" step="0.01" class="form-control" />
-                </div>
-                <div class="form-group">
-                  <label>Max Değer</label>
-                  <input v-model.number="form.maxValue" type="number" step="0.01" class="form-control" />
+                  <input v-model.number="form.parameterValue" type="number" step="0.01" required class="form-control" />
                 </div>
               </div>
               <div class="form-group">
@@ -202,10 +200,8 @@ const selectedYear = ref(new Date().getFullYear())
 const form = reactive({
   id: null as number | null,
   parameterType: '',
-  parameterName: '',
-  value: 0,
-  minValue: null as number | null,
-  maxValue: null as number | null,
+  parameterKey: '',
+  parameterValue: 0,
   month: null as number | null,
   description: '',
   isActive: true
@@ -241,15 +237,15 @@ const filteredParameters = computed(() => {
   let result = parameters.value
   if (searchTerm.value) {
     const term = searchTerm.value.toLowerCase()
-    result = result.filter(p => p.parameterName?.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
+    result = result.filter(p => p.parameterKey?.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
   }
   return result
 })
 
 const columns: TableColumn[] = [
   { key: 'parameterType', label: 'Tip', width: '140px' },
-  { key: 'parameterName', label: 'Parametre Adı', sortable: true },
-  { key: 'value', label: 'Değer', width: '150px' },
+  { key: 'parameterKey', label: 'Parametre Adı', sortable: true },
+  { key: 'parameterValue', label: 'Değer', width: '150px' },
   { key: 'month', label: 'Ay', width: '100px' },
   { key: 'isActive', label: 'Durum', width: '100px' }
 ]
@@ -296,10 +292,8 @@ const openEditModal = (param: any) => {
   Object.assign(form, {
     id: param.id,
     parameterType: param.parameterType,
-    parameterName: param.parameterName,
-    value: param.value,
-    minValue: param.minValue,
-    maxValue: param.maxValue,
+    parameterKey: param.parameterKey,
+    parameterValue: param.parameterValue,
     month: param.month,
     description: param.description || '',
     isActive: param.isActive
@@ -315,10 +309,8 @@ const closeModal = () => {
 const resetForm = () => {
   form.id = null
   form.parameterType = ''
-  form.parameterName = ''
-  form.value = 0
-  form.minValue = null
-  form.maxValue = null
+  form.parameterKey = ''
+  form.parameterValue = 0
   form.month = null
   form.description = ''
   form.isActive = true
@@ -327,9 +319,10 @@ const resetForm = () => {
 const saveParameter = async () => {
   saving.value = true
   try {
-    const data = { ...form, year: selectedYear.value }
+    const { id, ...formData } = form
+    const data = { ...formData, year: selectedYear.value }
     const result = isEditing.value
-      ? await window.electronAPI.salaryParameter.update(form.id!, data)
+      ? await window.electronAPI.salaryParameter.update(id!, data)
       : await window.electronAPI.salaryParameter.create(data)
     
     if (result.success) {
@@ -349,7 +342,7 @@ const saveParameter = async () => {
 const deleteParameter = async (param: any) => {
   const confirmed = await confirm({
     title: 'Parametre Sil',
-    message: `"${param.parameterName}" parametresini silmek istediğinize emin misiniz?`,
+    message: `"${param.parameterKey}" parametresini silmek istediğinize emin misiniz?`,
     confirmText: 'Sil',
     type: 'danger'
   })
@@ -428,14 +421,24 @@ const handlePdf = () => success('PDF oluşturma özelliği yakında eklenecek')
 const handleExcelExport = () => success('Excel export özelliği yakında eklenecek')
 
 const getTypeLabel = (type: string) => {
-  const labels: Record<string, string> = { SGK: 'SGK', TAX: 'Vergi', MINIMUM_WAGE: 'Asgari Ücret', OTHER: 'Diğer' }
+  const labels: Record<string, string> = {
+    MinimumWage: 'Asgari Ücret',
+    SGKEmployeeRate: 'SGK İşçi',
+    SGKEmployerRate: 'SGK İşveren',
+    IncomeTaxBracket: 'Vergi Dilimi',
+    StampTax: 'Damga Vergisi',
+    UnemploymentEmployee: 'İşsizlik İşçi',
+    UnemploymentEmployer: 'İşsizlik İşveren'
+  }
   return labels[type] || type
 }
 
 const formatValue = (row: any) => {
-  if (row.parameterType === 'MINIMUM_WAGE') return formatCurrency(row.value)
-  if (row.parameterType === 'SGK' || row.parameterType === 'TAX') return `%${row.value}`
-  return row.value
+  if (row.parameterType === 'MinimumWage') return formatCurrency(row.parameterValue)
+  if (row.parameterType.includes('Rate') || row.parameterType === 'StampTax' || row.parameterType === 'IncomeTaxBracket') {
+    return row.parameterKey.includes('limit') ? formatCurrency(row.parameterValue) : `%${row.parameterValue}`
+  }
+  return row.parameterValue
 }
 
 const formatCurrency = (value: number) => {
@@ -486,10 +489,13 @@ onMounted(() => loadParameters())
   font-size: 0.75rem; font-weight: 600;
 }
 
-.type-sgk { background: #cce5ff; color: #004085; }
-.type-tax { background: #fff3cd; color: #856404; }
-.type-minimum_wage { background: #d4edda; color: #155724; }
-.type-other { background: #e9ecef; color: #495057; }
+.type-sgkemployeerate { background: #cce5ff; color: #004085; }
+.type-sgkemployerrate { background: #b8daff; color: #004085; }
+.type-incometaxbracket { background: #fff3cd; color: #856404; }
+.type-minimumwage { background: #d4edda; color: #155724; }
+.type-stamptax { background: #f8d7da; color: #721c24; }
+.type-unemploymentemployee { background: #e2d5f1; color: #5e4b8b; }
+.type-unemploymentemployer { background: #d5e2f1; color: #4b5e8b; }
 
 .value-display { font-weight: 600; font-family: 'Consolas', monospace; }
 
