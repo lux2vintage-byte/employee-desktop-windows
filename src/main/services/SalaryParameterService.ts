@@ -7,13 +7,17 @@ export interface CreateSalaryParameterDto {
   month?: number
   parameterType: string
   parameterKey: string
-  parameterValue: number
+  valueType: 'percentage' | 'amount'
+  parameterValue?: number
+  percentageValue?: number
   description?: string
   isActive?: boolean
 }
 
 export interface UpdateSalaryParameterDto {
+  valueType?: 'percentage' | 'amount'
   parameterValue?: number
+  percentageValue?: number
   description?: string
   isActive?: boolean
 }
@@ -42,7 +46,7 @@ export class SalaryParameterService {
   }
 
   async delete(id: number, userId?: number): Promise<SalaryParameter> {
-    return await this.repository.update(id, { isActive: false } as any, userId)
+    return await this.repository.hardDelete(id, userId)
   }
 
   async getMinimumWage(year: number, month?: number): Promise<number> {

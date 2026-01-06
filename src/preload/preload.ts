@@ -167,6 +167,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
     seedDefaults: (userId?: number) => ipcRenderer.invoke('leave-type-seed-defaults', userId),
   },
 
+  // ==================== PARAMETRE TÜRÜ İŞLEMLERİ ====================
+  parameterType: {
+    getAll: (options?: any) => ipcRenderer.invoke('parameter-type-get-all', options),
+    getAllWithoutPagination: () => ipcRenderer.invoke('parameter-type-get-all-without-pagination'),
+    getById: (id: number) => ipcRenderer.invoke('parameter-type-get-by-id', id),
+    getByCode: (code: string) => ipcRenderer.invoke('parameter-type-get-by-code', code),
+    getActive: () => ipcRenderer.invoke('parameter-type-get-active'),
+    getByCategory: (category: string) => ipcRenderer.invoke('parameter-type-get-by-category', category),
+    getCategories: () => ipcRenderer.invoke('parameter-type-get-categories'),
+    create: (data: any, userId?: number) => ipcRenderer.invoke('parameter-type-create', data, userId),
+    update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('parameter-type-update', id, data, userId),
+    delete: (id: number, userId?: number) => ipcRenderer.invoke('parameter-type-delete', id, userId),
+    seedDefaults: (userId?: number) => ipcRenderer.invoke('parameter-type-seed-defaults', userId),
+  },
+
   // ==================== GÜN TÜRÜ İŞLEMLERİ ====================
   dayType: {
     getAll: (options?: any) => ipcRenderer.invoke('day-type-get-all', options),

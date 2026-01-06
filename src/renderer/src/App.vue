@@ -158,6 +158,7 @@ const menus = ref([
       { path: '/users', label: 'Kullanıcılar', icon: '👤' },
       { path: '/settings/roles', label: 'Rol ve Yetki Tanımları', icon: '🔐', divider: 'Tanımlamalar' },
       { path: '/settings/leave-rights', label: 'İzin Hakları Tanımlama', icon: '📋' },
+      { path: '/settings/parameter-types', label: 'Parametre Türü Tanımlama', icon: '📑' },
       { path: '/salary/parameters', label: 'Bordro Parametreleri', icon: '⚙️' },
       { path: '/settings/modules', label: 'Genel Modül Ayarları', icon: '🔧' }
     ]

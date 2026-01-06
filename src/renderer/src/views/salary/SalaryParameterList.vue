@@ -21,23 +21,21 @@
         <div class="year-content">
           <label>Yıl Seçimi</label>
           <div class="year-inputs">
-            <select v-model="selectedYear" class="year-select" @change="loadParameters">
-              <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-            </select>
+            <input 
+              type="number" 
+              v-model.number="selectedYear" 
+              class="year-input" 
+              min="2020" 
+              max="2099"
+              @change="loadParameters"
+              placeholder="YYYY"
+            />
             <button class="btn btn-sm btn-outline" @click="copyFromPreviousYear" :disabled="copying">
               {{ copying ? '⏳' : '📋' }} Önceki Yıldan Kopyala
             </button>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- İstatistik Kartları -->
-    <div class="stats-grid">
-      <StatCard icon="📊" :value="stats.totalParameters" label="Toplam Parametre" color="primary" />
-      <StatCard icon="💵" :value="formatCurrency(stats.minimumWage)" label="Asgari Ücret" color="success" />
-      <StatCard icon="🏛️" :value="stats.sgkCount" label="SGK Parametresi" color="info" />
-      <StatCard icon="📈" :value="stats.taxCount" label="Vergi Dilimi" color="warning" />
     </div>
 
     <!-- Araç Çubuğu -->
@@ -53,13 +51,9 @@
         <div class="filter-group">
           <select v-model="filterType" @change="loadParameters" class="filter-select">
             <option value="">Tüm Tipler</option>
-            <option value="SGKEmployeeRate">SGK İşçi</option>
-            <option value="SGKEmployerRate">SGK İşveren</option>
-            <option value="IncomeTaxBracket">Vergi Dilimleri</option>
-            <option value="MinimumWage">Asgari Ücret</option>
-            <option value="StampTax">Damga Vergisi</option>
-            <option value="UnemploymentEmployee">İşsizlik İşçi</option>
-            <option value="UnemploymentEmployer">İşsizlik İşveren</option>
+            <option v-for="pType in parameterTypes" :key="pType.code" :value="pType.code">
+              {{ pType.name }}
+            </option>
           </select>
         </div>
         <div class="filter-group">
@@ -91,7 +85,7 @@
           {{ getTypeLabel(value) }}
         </span>
       </template>
-      <template #cell-value="{ row }">
+      <template #cell-parameterValue="{ row }">
         <span class="value-display">
           {{ formatValue(row) }}
         </span>
@@ -119,17 +113,16 @@
             <form @submit.prevent="saveParameter" class="modal-body">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Parametre Tipi *</label>
-                  <select v-model="form.parameterType" required class="form-control">
-                    <option value="">Seçin</option>
-                    <option value="MinimumWage">Asgari Ücret</option>
-                    <option value="SGKEmployeeRate">SGK İşçi Payı</option>
-                    <option value="SGKEmployerRate">SGK İşveren Payı</option>
-                    <option value="IncomeTaxBracket">Gelir Vergisi Dilimi</option>
-                    <option value="StampTax">Damga Vergisi</option>
-                    <option value="UnemploymentEmployee">İşsizlik Sigortası İşçi</option>
-                    <option value="UnemploymentEmployer">İşsizlik Sigortası İşveren</option>
-                  </select>
+                  <label>Ait Olduğu Yıl *</label>
+                  <input 
+                    type="number" 
+                    v-model.number="form.year" 
+                    class="form-control year-picker" 
+                    min="2020" 
+                    max="2099"
+                    required
+                    placeholder="YYYY"
+                  />
                 </div>
                 <div class="form-group">
                   <label>Ay (Opsiyonel)</label>
@@ -141,12 +134,60 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
+                  <label>Parametre Tipi *</label>
+                  <select v-model="form.parameterType" required class="form-control">
+                    <option value="">Seçin</option>
+                    <option v-for="pType in parameterTypes" :key="pType.code" :value="pType.code">
+                      {{ pType.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
                   <label>Parametre Adı *</label>
                   <input v-model="form.parameterKey" type="text" required class="form-control" placeholder="Örn: Brüt Ücret, 1. Dilim Oranı" />
                 </div>
                 <div class="form-group">
-                  <label>Değer *</label>
-                  <input v-model.number="form.parameterValue" type="number" step="0.01" required class="form-control" />
+                  <label>Değer Tipi *</label>
+                  <select v-model="form.valueType" required class="form-control">
+                    <option value="percentage">Yüzde</option>
+                    <option value="amount">Tutar</option>
+                  </select>
+                </div>
+              </div>
+              <!-- Tutar Alanı -->
+              <div class="form-row" v-if="form.valueType === 'amount'">
+                <div class="form-group full-width">
+                  <label>Tutar *</label>
+                  <div class="input-with-suffix">
+                    <input 
+                      v-model.number="form.parameterValue" 
+                      type="number" 
+                      step="0.01" 
+                      required 
+                      class="form-control currency-input" 
+                      placeholder="0,00"
+                    />
+                    <span class="input-suffix">₺</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Yüzde Alanı -->
+              <div class="form-row" v-if="form.valueType === 'percentage'">
+                <div class="form-group full-width">
+                  <label>Yüzde *</label>
+                  <div class="input-with-suffix">
+                    <input 
+                      v-model.number="form.percentageValue" 
+                      type="number" 
+                      step="0.001" 
+                      required 
+                      class="form-control percentage-input" 
+                      placeholder="0,00"
+                    />
+                    <span class="input-suffix">%</span>
+                  </div>
                 </div>
               </div>
               <div class="form-group">
@@ -176,7 +217,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
-import StatCard from '@/components/StatCard.vue'
 import ActionToolbar from '@/components/ActionToolbar.vue'
 import DataTable, { type TableColumn } from '@/components/DataTable.vue'
 import { useToast } from '@/composables/useToast'
@@ -193,15 +233,19 @@ const copying = ref(false)
 const showModal = ref(false)
 const isEditing = ref(false)
 const parameters = ref<any[]>([])
+const parameterTypes = ref<any[]>([])
 const searchTerm = ref('')
 const filterType = ref('')
 const selectedYear = ref(new Date().getFullYear())
 
 const form = reactive({
   id: null as number | null,
+  year: new Date().getFullYear(),
   parameterType: '',
   parameterKey: '',
+  valueType: 'percentage' as 'percentage' | 'amount',
   parameterValue: 0,
+  percentageValue: 0,
   month: null as number | null,
   description: '',
   isActive: true
@@ -214,24 +258,12 @@ const pagination = reactive({
   totalPages: 0
 })
 
-const stats = reactive({
-  totalParameters: 0,
-  minimumWage: 0,
-  sgkCount: 0,
-  taxCount: 0
-})
-
 const months = [
   { value: 1, label: 'Ocak' }, { value: 2, label: 'Şubat' }, { value: 3, label: 'Mart' },
   { value: 4, label: 'Nisan' }, { value: 5, label: 'Mayıs' }, { value: 6, label: 'Haziran' },
   { value: 7, label: 'Temmuz' }, { value: 8, label: 'Ağustos' }, { value: 9, label: 'Eylül' },
   { value: 10, label: 'Ekim' }, { value: 11, label: 'Kasım' }, { value: 12, label: 'Aralık' }
 ]
-
-const years = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
-})
 
 const filteredParameters = computed(() => {
   let result = parameters.value
@@ -243,6 +275,7 @@ const filteredParameters = computed(() => {
 })
 
 const columns: TableColumn[] = [
+  { key: 'year', label: 'Yıl', width: '80px' },
   { key: 'parameterType', label: 'Tip', width: '140px' },
   { key: 'parameterKey', label: 'Parametre Adı', sortable: true },
   { key: 'parameterValue', label: 'Değer', width: '150px' },
@@ -261,7 +294,6 @@ const loadParameters = async () => {
       parameters.value = result.data || []
       pagination.total = result.total || 0
       pagination.totalPages = result.totalPages || 1
-      updateStats()
     }
   } catch (err) {
     error('Parametreler yüklenemedi')
@@ -270,20 +302,10 @@ const loadParameters = async () => {
   }
 }
 
-const updateStats = async () => {
-  stats.totalParameters = parameters.value.length
-  stats.sgkCount = parameters.value.filter(p => p.parameterType === 'SGK').length
-  stats.taxCount = parameters.value.filter(p => p.parameterType === 'TAX').length
-  
-  try {
-    const wageResult = await window.electronAPI.salaryParameter.getMinimumWage(selectedYear.value)
-    if (wageResult.success) stats.minimumWage = wageResult.data?.minimumWage || 0
-  } catch (err) { /* ignore */ }
-}
-
 const openCreateModal = () => {
   isEditing.value = false
   resetForm()
+  form.year = selectedYear.value
   showModal.value = true
 }
 
@@ -291,9 +313,12 @@ const openEditModal = (param: any) => {
   isEditing.value = true
   Object.assign(form, {
     id: param.id,
+    year: param.year,
     parameterType: param.parameterType,
     parameterKey: param.parameterKey,
-    parameterValue: param.parameterValue,
+    valueType: param.valueType || 'percentage',
+    parameterValue: param.parameterValue || 0,
+    percentageValue: param.percentageValue || 0,
     month: param.month,
     description: param.description || '',
     isActive: param.isActive
@@ -308,9 +333,12 @@ const closeModal = () => {
 
 const resetForm = () => {
   form.id = null
+  form.year = new Date().getFullYear()
   form.parameterType = ''
   form.parameterKey = ''
+  form.valueType = 'percentage'
   form.parameterValue = 0
+  form.percentageValue = 0
   form.month = null
   form.description = ''
   form.isActive = true
@@ -320,7 +348,17 @@ const saveParameter = async () => {
   saving.value = true
   try {
     const { id, ...formData } = form
-    const data = { ...formData, year: selectedYear.value }
+    const data = { 
+      year: formData.year,
+      month: formData.month,
+      parameterType: formData.parameterType,
+      parameterKey: formData.parameterKey,
+      valueType: formData.valueType,
+      parameterValue: formData.valueType === 'amount' ? formData.parameterValue : 0,
+      percentageValue: formData.valueType === 'percentage' ? formData.percentageValue : null,
+      description: formData.description,
+      isActive: formData.isActive
+    }
     const result = isEditing.value
       ? await window.electronAPI.salaryParameter.update(id!, data)
       : await window.electronAPI.salaryParameter.create(data)
@@ -420,7 +458,22 @@ const handlePrint = () => window.print()
 const handlePdf = () => success('PDF oluşturma özelliği yakında eklenecek')
 const handleExcelExport = () => success('Excel export özelliği yakında eklenecek')
 
+const loadParameterTypes = async () => {
+  try {
+    const result = await window.electronAPI.parameterType.getActive()
+    if (result.success) {
+      parameterTypes.value = result.data || []
+    }
+  } catch (err) {
+    console.error('Parametre türleri yüklenemedi')
+  }
+}
+
 const getTypeLabel = (type: string) => {
+  const found = parameterTypes.value.find(p => p.code === type)
+  if (found) return found.name
+  
+  // Fallback için eski etiketler
   const labels: Record<string, string> = {
     MinimumWage: 'Asgari Ücret',
     SGKEmployeeRate: 'SGK İşçi',
@@ -434,6 +487,13 @@ const getTypeLabel = (type: string) => {
 }
 
 const formatValue = (row: any) => {
+  if (row.valueType === 'amount') {
+    return formatCurrency(row.parameterValue)
+  }
+  if (row.valueType === 'percentage') {
+    return `%${row.percentageValue ?? 0}`
+  }
+  // Fallback for legacy data
   if (row.parameterType === 'MinimumWage') return formatCurrency(row.parameterValue)
   if (row.parameterType.includes('Rate') || row.parameterType === 'StampTax' || row.parameterType === 'IncomeTaxBracket') {
     return row.parameterKey.includes('limit') ? formatCurrency(row.parameterValue) : `%${row.parameterValue}`
@@ -445,7 +505,10 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value || 0)
 }
 
-onMounted(() => loadParameters())
+onMounted(() => {
+  loadParameterTypes()
+  loadParameters()
+})
 </script>
 
 <style scoped>
@@ -469,9 +532,27 @@ onMounted(() => loadParameters())
   font-size: 1rem; font-weight: 600; background: white; min-width: 120px;
 }
 
-.stats-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem; margin-bottom: 1.5rem;
+.year-input {
+  padding: 0.625rem 1rem; border: 1px solid #dee2e6; border-radius: 6px;
+  font-size: 1rem; font-weight: 600; background: white; min-width: 120px; max-width: 120px;
+  text-align: center;
+}
+
+.year-input::-webkit-outer-spin-button,
+.year-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.year-picker {
+  text-align: center;
+  font-weight: 600;
+}
+
+.year-picker::-webkit-outer-spin-button,
+.year-picker::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .filter-group { display: flex; align-items: center; gap: 0.5rem; }
@@ -538,11 +619,36 @@ onMounted(() => loadParameters())
 
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
 .form-group { margin-bottom: 1rem; }
+.form-group.full-width { grid-column: 1 / -1; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #495057; }
 
 .form-control {
   width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #dee2e6;
   border-radius: 6px; font-size: 0.95rem;
+}
+
+.input-with-suffix {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.input-with-suffix .form-control {
+  padding-right: 2.5rem;
+}
+
+.input-suffix {
+  position: absolute;
+  right: 0.875rem;
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.currency-input, .percentage-input {
+  font-family: 'Consolas', monospace;
+  font-weight: 600;
 }
 
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }

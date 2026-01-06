@@ -275,6 +275,12 @@ const router = createRouter({
       name: 'settings-modules',
       component: () => import('../views/settings/ModuleSettings.vue'),
     },
+    // Ayarlar - Parametre Türü Tanımları
+    {
+      path: '/settings/parameter-types',
+      name: 'settings-parameter-types',
+      component: () => import('../views/settings/ParameterTypeList.vue'),
+    },
   ],
 })
 

@@ -168,6 +168,20 @@ export interface DayType {
   deletedAt: string | null;
 }
 
+// Parametre Türü
+export interface ParameterType {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  category: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 // Tatil türü
 export type HolidayType = 'resmi_bayram' | 'dini_bayram' | 'arefe' | 'hafta_tatili' | 'normal_gun';
 
@@ -267,15 +281,14 @@ export interface SalaryParameter {
   year: number;
   month: number | null;
   parameterType: string;
-  parameterName: string;
-  value: number;
-  minValue: number | null;
-  maxValue: number | null;
+  parameterKey: string;
+  valueType: 'percentage' | 'amount';
+  parameterValue: number;
+  percentageValue: number | null;
   description: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string | null;
 }
 
 // ==================== PERSONEL EK ÖDEME/KESİNTİ TİPLERİ ====================
@@ -635,6 +648,21 @@ declare global {
         update: (id: number, data: any, userId?: number) => Promise<ApiResponse<DayType>>;
         delete: (id: number, userId?: number) => Promise<ApiResponse<DayType>>;
         seedDefaults: (userId?: number) => Promise<ApiResponse<DayType[]>>;
+      };
+
+      // Parametre türü işlemleri
+      parameterType: {
+        getAll: (options?: any) => Promise<PaginatedResult<ParameterType>>;
+        getAllWithoutPagination: () => Promise<ApiResponse<ParameterType[]>>;
+        getById: (id: number) => Promise<ApiResponse<ParameterType | null>>;
+        getByCode: (code: string) => Promise<ApiResponse<ParameterType | null>>;
+        getActive: () => Promise<ApiResponse<ParameterType[]>>;
+        getByCategory: (category: string) => Promise<ApiResponse<ParameterType[]>>;
+        getCategories: () => Promise<ApiResponse<string[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<ParameterType>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<ParameterType>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<ParameterType>>;
+        seedDefaults: (userId?: number) => Promise<ApiResponse<{ message: string }>>;
       };
 
       // Takvim / Tatil işlemleri

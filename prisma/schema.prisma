@@ -383,6 +383,23 @@ model LeaveBalance {
 
 // ==================== MAAŞ PARAMETRELERİ ====================
 
+// Parametre türleri tablosu (dinamik parametre tipi tanımlamaları)
+model ParameterType {
+  id           Int       @id @default(autoincrement())
+  code         String    @unique // Örn: MinimumWage, SGKEmployeeRate
+  name         String    // Görünen ad: Asgari Ücret, SGK İşçi Payı
+  description  String?   // Açıklama
+  category     String?   // Kategori: SGK, Vergi, Ücret, Kesinti
+  sortOrder    Int       @default(0) @map("sort_order") // Sıralama
+  isActive     Boolean   @default(true) @map("is_active")
+  isSystem     Boolean   @default(false) @map("is_system") // Sistem parametresi mi (silinemez)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@map("parameter_types")
+}
+
 // Maaş parametreleri tablosu (SGK, vergi dilimleri, asgari ücret vb.)
 model SalaryParameter {
   id              Int       @id @default(autoincrement())
@@ -390,7 +407,9 @@ model SalaryParameter {
   month           Int?      // null ise yıllık parametre
   parameterType   String    @map("parameter_type") // MinimumWage, SGKEmployeeRate, SGKEmployerRate, IncomeTaxBracket, StampTax, UnemploymentEmployee, UnemploymentEmployer
   parameterKey    String    @map("parameter_key") // Örn: bracket1_rate, bracket1_limit
-  parameterValue  Float     @map("parameter_value")
+  valueType       String    @default("percentage") @map("value_type") // percentage (Yüzde), amount (Tutar)
+  parameterValue  Float     @map("parameter_value") // Tutar değeri
+  percentageValue Float?    @map("percentage_value") // Yüzde değeri
   description     String?
   isActive        Boolean   @default(true) @map("is_active")
   createdAt       DateTime  @default(now()) @map("created_at")

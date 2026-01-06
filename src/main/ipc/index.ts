@@ -25,3 +25,4 @@ export { setupSettingsHandlers, initializeSettingsController } from './settings-
 export { setupReportHandlers, initializeReportController } from './report-handlers'
 export { setupDayTypeHandlers, initializeDayTypeController } from './day-type-handlers'
 export { setupCalendarHandlers } from './calendar-handlers'
+export { setupParameterTypeHandlers, initializeParameterTypeController } from './parameter-type-handlers'
