@@ -24,3 +24,5 @@ export { TrainingService, type CreateTrainingDto, type UpdateTrainingDto, type A
 export { DisciplinaryService, type CreateDisciplinaryActionDto, type UpdateDisciplinaryActionDto } from './DisciplinaryService'
 export { OffboardingService, type CreateResignationDto, type UpdateResignationDto, type CreateExitInterviewDto, type UpdateExitInterviewDto, type FinalSettlement, BusinessRuleError as OffboardingBusinessRuleError, ValidationError as OffboardingValidationError } from './OffboardingService'
 export { SettingsService, getSettingsService, resetSettingsService, DEFAULT_SETTINGS, SETTING_DATA_TYPES, SettingsValidationError, SettingsBusinessRuleError } from './SettingsService'
+export { PayrollColumnMappingService, type CreatePayrollColumnMappingDto, type UpdatePayrollColumnMappingDto } from './PayrollColumnMappingService'
+export { PayrollCalculationService, type TaxBracket, type CalculationContext, type CalculationResult, type PayrollCalculationResult } from './PayrollCalculationService'

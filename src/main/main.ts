@@ -32,6 +32,8 @@ import { setupReportHandlers } from './ipc/report-handlers'
 import { setupDayTypeHandlers } from './ipc/day-type-handlers'
 import { setupCalendarHandlers } from './ipc/calendar-handlers'
 import { setupParameterTypeHandlers } from './ipc/parameter-type-handlers'
+import { setupPayrollColumnMappingHandlers } from './ipc/payroll-column-mapping-handlers'
+import { setupEmployeeSalaryHandlers } from './ipc/employee-salary-handlers'
 
 // GPU hatalarını önlemek için GPU'yu devre dışı bırak
 app.disableHardwareAcceleration()
@@ -59,7 +61,7 @@ function setupDebugConfiguration(): void {
 async function createMainWindow(): Promise<BrowserWindow> {
   // Ekran boyutlarını al
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
-  
+
   // Ana pencere konfigürasyonu
   const windowOptions = {
     width: width,
@@ -127,7 +129,7 @@ function setupWindowEventHandlers(window: BrowserWindow): void {
   // Pencere hazır olduğunda
   window.once('ready-to-show', () => {
     window.show()
-    
+
     if (isDev) {
       window.webContents.openDevTools()
     }
@@ -184,6 +186,8 @@ function setupIPCHandlers(): void {
   setupDayTypeHandlers()
   setupCalendarHandlers()
   setupParameterTypeHandlers()
+  setupPayrollColumnMappingHandlers()
+  setupEmployeeSalaryHandlers()
   setupReportHandlers()
 }
 
@@ -193,17 +197,17 @@ function setupIPCHandlers(): void {
 app.whenReady().then(async () => {
   // Varsayılan menüyü kaldır
   Menu.setApplicationMenu(null)
-  
+
   // Debug konfigürasyonunu kur
   setupDebugConfiguration()
-  
+
   try {
     // Önce veritabanını başlat
     await initializeDatabaseManager()
-    
+
     // IPC handler'ları kur
     setupIPCHandlers()
-    
+
     // Sonra ana pencereyi oluştur
     await createMainWindow()
   } catch (error) {

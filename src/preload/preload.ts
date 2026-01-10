@@ -182,6 +182,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     seedDefaults: (userId?: number) => ipcRenderer.invoke('parameter-type-seed-defaults', userId),
   },
 
+  // ==================== BORDRO SÜTUN EŞLEŞTİRME İŞLEMLERİ ====================
+  payrollColumnMapping: {
+    getAll: (options?: any) => ipcRenderer.invoke('payroll-column-mapping-get-all', options),
+    getById: (id: number) => ipcRenderer.invoke('payroll-column-mapping-get-by-id', id),
+    getByCode: (columnCode: string) => ipcRenderer.invoke('payroll-column-mapping-get-by-code', columnCode),
+    getActive: () => ipcRenderer.invoke('payroll-column-mapping-get-active'),
+    getByType: (columnType: 'income' | 'deduction' | 'info') => ipcRenderer.invoke('payroll-column-mapping-get-by-type', columnType),
+    create: (data: any, userId?: number) => ipcRenderer.invoke('payroll-column-mapping-create', data, userId),
+    update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('payroll-column-mapping-update', id, data, userId),
+    delete: (id: number, userId?: number) => ipcRenderer.invoke('payroll-column-mapping-delete', id, userId),
+    seedDefaults: (userId?: number) => ipcRenderer.invoke('payroll-column-mapping-seed-defaults', userId),
+    validateFormula: (formula: string) => ipcRenderer.invoke('payroll-column-mapping-validate-formula', formula),
+  },
+
   // ==================== GÜN TÜRÜ İŞLEMLERİ ====================
   dayType: {
     getAll: (options?: any) => ipcRenderer.invoke('day-type-get-all', options),
@@ -195,17 +209,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ==================== TAKVİM / TATİL İŞLEMLERİ ====================
   calendar: {
-    getHolidaysForMonth: (year: number, month: number) => 
+    getHolidaysForMonth: (year: number, month: number) =>
       ipcRenderer.invoke('calendar-get-holidays-for-month', year, month),
-    getHolidaysForYear: (year: number) => 
+    getHolidaysForYear: (year: number) =>
       ipcRenderer.invoke('calendar-get-holidays-for-year', year),
-    getDayType: (year: number, month: number, day: number) => 
+    getDayType: (year: number, month: number, day: number) =>
       ipcRenderer.invoke('calendar-get-day-type', year, month, day),
-    getDayTypeMap: (year: number, month: number) => 
+    getDayTypeMap: (year: number, month: number) =>
       ipcRenderer.invoke('calendar-get-day-type-map', year, month),
-    getWorkingDays: (year: number, month: number) => 
+    getWorkingDays: (year: number, month: number) =>
       ipcRenderer.invoke('calendar-get-working-days', year, month),
-    getHolidaysInRange: (startDate: string, endDate: string) => 
+    getHolidaysInRange: (startDate: string, endDate: string) =>
       ipcRenderer.invoke('calendar-get-holidays-in-range', startDate, endDate),
   },
 
@@ -263,6 +277,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('salary-create', employeeId, data, userId),
     update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) =>
       ipcRenderer.invoke('salary-update', employeeId, newAmount, effectiveDate, userId),
+  },
+
+  // ==================== PERSONEL ÜCRETLERİ İŞLEMLERİ ====================
+  employeeSalary: {
+    getAll: (options?: any) => ipcRenderer.invoke('employee-salary:get-all', options),
+    getById: (id: number) => ipcRenderer.invoke('employee-salary:get-by-id', id),
+    getByEmployee: (employeeId: number) => ipcRenderer.invoke('employee-salary:get-by-employee', employeeId),
+    getByYear: (year: number) => ipcRenderer.invoke('employee-salary:get-by-year', year),
+    getByEmployeeAndYear: (employeeId: number, year: number) =>
+      ipcRenderer.invoke('employee-salary:get-by-employee-and-year', employeeId, year),
+    create: (data: any, userId?: number) => ipcRenderer.invoke('employee-salary:create', data, userId),
+    update: (id: number, data: any, userId?: number) => ipcRenderer.invoke('employee-salary:update', id, data, userId),
+    delete: (id: number, userId?: number) => ipcRenderer.invoke('employee-salary:delete', id, userId),
+    restore: (id: number, userId?: number) => ipcRenderer.invoke('employee-salary:restore', id, userId),
+    getYears: () => ipcRenderer.invoke('employee-salary:get-years'),
   },
 
   // ==================== BORDRO İŞLEMLERİ ====================

@@ -26,3 +26,5 @@ export { DisciplinaryRepository, type DisciplinaryActionWithRelations, type Disc
 export { ResignationRepository, type ResignationWithRelations, type ResignationFilterOptions, VALID_REASON_CATEGORIES, VALID_RESIGNATION_STATUSES, type ReasonCategory, type ResignationStatus } from './ResignationRepository'
 export { ExitInterviewRepository, type ExitInterviewWithRelations } from './ExitInterviewRepository'
 export { AppSettingRepository, type AppSettingWithRelations, type AppSettingFilterOptions } from './AppSettingRepository'
+export { PayrollColumnMappingRepository, type PayrollColumnMappingFilterOptions } from './PayrollColumnMappingRepository'
+export { PayrollFormulaVariableRepository } from './PayrollFormulaVariableRepository'

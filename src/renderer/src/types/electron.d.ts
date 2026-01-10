@@ -282,13 +282,37 @@ export interface SalaryParameter {
   month: number | null;
   parameterType: string;
   parameterKey: string;
-  valueType: 'percentage' | 'amount';
+  valueType: 'percentage' | 'amount' | 'bracket' | 'multiplier' | 'integer';
   parameterValue: number;
   percentageValue: number | null;
+  lowerLimit: number | null;
+  upperLimit: number | null;
+  bracketOrder: number | null;
   description: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// ==================== BORDRO KOLON EŞLEŞTİRME TİPLERİ ====================
+export interface PayrollColumnMapping {
+  id: number;
+  columnCode: string;
+  columnName: string;
+  columnType: 'income' | 'deduction' | 'info';
+  category: string | null;
+  parameterTypes: string;
+  formula: string | null;
+  formulaType: 'simple' | 'bracket' | 'cumulative' | 'custom' | null;
+  sortOrder: number;
+  dataType: string; // text, integer, float, currency
+  columnWidth: string; // 120px, 15%, auto
+  isActive: boolean;
+  isSystem: boolean;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 // ==================== PERSONEL EK ÖDEME/KESİNTİ TİPLERİ ====================
@@ -718,6 +742,20 @@ declare global {
         update: (employeeId: number, newAmount: number, effectiveDate: string, userId?: number) => Promise<ApiResponse<SalaryHistory>>;
       };
 
+      // Personel ücretleri işlemleri
+      employeeSalary: {
+        getAll: (options?: any) => Promise<ApiResponse<any>>;
+        getById: (id: number) => Promise<ApiResponse<any>>;
+        getByEmployee: (employeeId: number) => Promise<ApiResponse<any>>;
+        getByYear: (year: number) => Promise<ApiResponse<any>>;
+        getByEmployeeAndYear: (employeeId: number, year: number) => Promise<ApiResponse<any>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<any>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<any>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<any>>;
+        restore: (id: number, userId?: number) => Promise<ApiResponse<any>>;
+        getYears: () => Promise<ApiResponse<number[]>>;
+      };
+
 
       // Bordro işlemleri
       payroll: {
@@ -906,6 +944,20 @@ declare global {
         getEmployeeSummary: (employeeId: number, year: number) => Promise<ApiResponse<any>>;
         recordSalaryPayment: (employeeId: number, payrollId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) => Promise<ApiResponse<PaymentHistory>>;
         recordAdvancePayment: (employeeId: number, amount: number, paymentMethod: 'Bank' | 'Cash' | 'Check', bankDetails?: any, userId?: number) => Promise<ApiResponse<PaymentHistory>>;
+      };
+
+      // Bordro kolon eşleştirme işlemleri
+      payrollColumnMapping: {
+        getAll: (options?: any) => Promise<PaginatedResult<PayrollColumnMapping>>;
+        getById: (id: number) => Promise<ApiResponse<PayrollColumnMapping | null>>;
+        getByCode: (columnCode: string) => Promise<ApiResponse<PayrollColumnMapping | null>>;
+        getActive: () => Promise<ApiResponse<PayrollColumnMapping[]>>;
+        getByType: (columnType: 'income' | 'deduction' | 'info') => Promise<ApiResponse<PayrollColumnMapping[]>>;
+        create: (data: any, userId?: number) => Promise<ApiResponse<PayrollColumnMapping>>;
+        update: (id: number, data: any, userId?: number) => Promise<ApiResponse<PayrollColumnMapping>>;
+        delete: (id: number, userId?: number) => Promise<ApiResponse<PayrollColumnMapping>>;
+        seedDefaults: (userId?: number) => Promise<ApiResponse<PayrollColumnMapping[]>>;
+        validateFormula: (formula: string) => Promise<ApiResponse<{ valid: boolean; error?: string }>>;
       };
 
       // Şirket bilgileri işlemleri

@@ -162,6 +162,11 @@ const router = createRouter({
       name: 'salary-payments',
       component: () => import('../views/salary/PaymentHistoryList.vue'),
     },
+    {
+      path: '/salary/employee-salaries',
+      name: 'employee-salaries',
+      component: () => import('../views/salary/EmployeeSalaryList.vue'),
+    },
     // Performans ve Değerlendirme
     {
       path: '/performance/reviews',
@@ -280,6 +285,17 @@ const router = createRouter({
       path: '/settings/parameter-types',
       name: 'settings-parameter-types',
       component: () => import('../views/settings/ParameterTypeList.vue'),
+    },
+    {
+      path: '/settings/payroll-design',
+      name: 'payroll-design',
+      component: () => import('../views/settings/PayrollDesign.vue'),
+    },
+    // Ayarlar - Bordro Hesaplama Kuralları
+    {
+      path: '/settings/payroll-rules',
+      name: 'settings-payroll-rules',
+      component: () => import('../views/settings/PayrollRules.vue'),
     },
   ],
 })

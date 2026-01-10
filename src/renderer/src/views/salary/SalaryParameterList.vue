@@ -85,6 +85,9 @@
           {{ getTypeLabel(value) }}
         </span>
       </template>
+      <template #cell-parameterKey="{ row }">
+        <span class="parameter-name">{{ formatParameterKey(row.parameterKey, row.parameterType) }}</span>
+      </template>
       <template #cell-parameterValue="{ row }">
         <span class="value-display">
           {{ formatValue(row) }}
@@ -146,13 +149,24 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Parametre Adı *</label>
-                  <input v-model="form.parameterKey" type="text" required class="form-control" placeholder="Örn: Brüt Ücret, 1. Dilim Oranı" />
+                  <input 
+                    v-if="isEditing && isBracketParameter(form.parameterKey)" 
+                    :value="formatParameterKey(form.parameterKey, form.parameterType)" 
+                    type="text" 
+                    readonly 
+                    class="form-control readonly-input" 
+                    title="Gelir vergisi dilimi parametrelerinin adı değiştirilemez"
+                  />
+                  <input v-else v-model="form.parameterKey" type="text" required class="form-control" placeholder="Örn: Brüt Ücret, 1. Dilim Oranı" />
                 </div>
                 <div class="form-group">
                   <label>Değer Tipi *</label>
-                  <select v-model="form.valueType" required class="form-control">
+                  <select v-model="form.valueType" required class="form-control" @change="onValueTypeChange">
                     <option value="percentage">Yüzde</option>
                     <option value="amount">Tutar</option>
+                    <option value="bracket">Dilim (Vergi Dilimleri)</option>
+                    <option value="multiplier">Çarpan</option>
+                    <option value="integer">Tam Sayı</option>
                   </select>
                 </div>
               </div>
@@ -176,7 +190,7 @@
               <!-- Yüzde Alanı -->
               <div class="form-row" v-if="form.valueType === 'percentage'">
                 <div class="form-group full-width">
-                  <label>Yüzde *</label>
+                  <label>Oran (%) *</label>
                   <div class="input-with-suffix">
                     <input 
                       v-model.number="form.percentageValue" 
@@ -184,9 +198,94 @@
                       step="0.001" 
                       required 
                       class="form-control percentage-input" 
-                      placeholder="0,00"
+                      placeholder="Örn: 14 veya 0.759"
                     />
                     <span class="input-suffix">%</span>
+                  </div>
+                  <small class="form-hint">Binde oranlar için: Binde 7,9 = %0.759 olarak girin</small>
+                </div>
+              </div>
+              <!-- Çarpan Alanı -->
+              <div class="form-row" v-if="form.valueType === 'multiplier'">
+                <div class="form-group full-width">
+                  <label>Çarpan *</label>
+                  <div class="input-with-suffix">
+                    <input 
+                      v-model.number="form.parameterValue" 
+                      type="number" 
+                      step="0.1" 
+                      required 
+                      class="form-control" 
+                      placeholder="1,5"
+                    />
+                    <span class="input-suffix">x</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Tam Sayı Alanı -->
+              <div class="form-row" v-if="form.valueType === 'integer'">
+                <div class="form-group full-width">
+                  <label>Değer *</label>
+                  <input 
+                    v-model.number="form.parameterValue" 
+                    type="number" 
+                    step="1" 
+                    required 
+                    class="form-control" 
+                    placeholder="30"
+                  />
+                </div>
+              </div>
+              <!-- Dilim Alanları (5 Sabit Dilim) -->
+              <div v-if="form.valueType === 'bracket'" class="bracket-section">
+                <div class="bracket-header">
+                  <h4>📊 Gelir Vergisi Dilimleri (5 Dilim)</h4>
+                  <p class="bracket-info">Her dilim için alt limit, üst limit ve vergi oranını girin</p>
+                </div>
+                <div class="bracket-table">
+                  <div class="bracket-row bracket-row-header">
+                    <span class="bracket-col bracket-col-order">Dilim</span>
+                    <span class="bracket-col">Alt Limit (₺)</span>
+                    <span class="bracket-col">Üst Limit (₺)</span>
+                    <span class="bracket-col">Oran (%)</span>
+                  </div>
+                  <div 
+                    v-for="(bracket, index) in form.brackets" 
+                    :key="index" 
+                    class="bracket-row"
+                  >
+                    <span class="bracket-col bracket-col-order">{{ index + 1 }}. Dilim</span>
+                    <div class="bracket-col">
+                      <input 
+                        v-model.number="bracket.lowerLimit" 
+                        type="number" 
+                        step="1" 
+                        class="form-control bracket-input"
+                        :placeholder="index === 0 ? '0' : 'Alt limit'"
+                        :disabled="index === 0"
+                      />
+                    </div>
+                    <div class="bracket-col">
+                      <input 
+                        v-model.number="bracket.upperLimit" 
+                        type="number" 
+                        step="1" 
+                        class="form-control bracket-input"
+                        :placeholder="index === 4 ? 'Sınırsız' : 'Üst limit'"
+                      />
+                    </div>
+                    <div class="bracket-col">
+                      <div class="input-with-suffix">
+                        <input 
+                          v-model.number="bracket.rate" 
+                          type="number" 
+                          step="0.1" 
+                          class="form-control bracket-input"
+                          placeholder="15"
+                        />
+                        <span class="input-suffix">%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -243,12 +342,20 @@ const form = reactive({
   year: new Date().getFullYear(),
   parameterType: '',
   parameterKey: '',
-  valueType: 'percentage' as 'percentage' | 'amount',
+  valueType: 'percentage' as 'percentage' | 'amount' | 'bracket' | 'multiplier' | 'integer',
   parameterValue: 0,
   percentageValue: 0,
   month: null as number | null,
   description: '',
-  isActive: true
+  isActive: true,
+  // Dilim desteği için
+  brackets: [
+    { order: 1, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 2, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 3, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 4, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 5, lowerLimit: 0, upperLimit: 999999999, rate: 0 }
+  ] as { order: number; lowerLimit: number; upperLimit: number; rate: number }[]
 })
 
 const pagination = reactive({
@@ -265,11 +372,64 @@ const months = [
   { value: 10, label: 'Ekim' }, { value: 11, label: 'Kasım' }, { value: 12, label: 'Aralık' }
 ]
 
+// Parametre anahtarının gelir vergisi dilimi olup olmadığını kontrol etme
+const isBracketParameter = (key: string): boolean => {
+  return /^bracket\d+_(lower|upper|rate)$/.test(key)
+}
+
+// Teknik parametre isimlerini kullanıcı dostu isimlere dönüştürme
+const formatParameterKey = (key: string, parameterType?: string): string => {
+  // Gelir vergisi dilimi parametreleri için özel dönüştürme
+  const bracketPattern = /^bracket(\d+)_(lower|upper|rate)$/
+  const match = key.match(bracketPattern)
+  
+  if (match) {
+    const bracketNumber = match[1]
+    const type = match[2]
+    
+    const typeLabels: Record<string, string> = {
+      'lower': 'Alt Tutar',
+      'upper': 'Üst Tutar',
+      'rate': 'Oranı'
+    }
+    
+    return `Gelir Vergisi ${bracketNumber}. Dilim ${type ? typeLabels[type] : ''}`
+  }
+  
+  // Diğer yaygın parametre isimleri için dönüştürme
+  const keyLabels: Record<string, string> = {
+    'minimum_wage': 'Asgari Ücret',
+    'gross_minimum_wage': 'Brüt Asgari Ücret',
+    'net_minimum_wage': 'Net Asgari Ücret',
+    'sgk_employee_rate': 'SGK İşçi Oranı',
+    'sgk_employer_rate': 'SGK İşveren Oranı',
+    'sgk_ceiling': 'SGK Tavan Tutarı',
+    'unemployment_employee_rate': 'İşsizlik Sigortası İşçi Oranı',
+    'unemployment_employer_rate': 'İşsizlik Sigortası İşveren Oranı',
+    'stamp_tax_rate': 'Damga Vergisi Oranı',
+    'income_tax_brackets': 'Gelir Vergisi Dilimleri',
+    'disability_discount': 'Engellilik İndirimi',
+    'minimum_living_allowance': 'Asgari Geçim İndirimi'
+  }
+  
+  if (keyLabels[key]) {
+    return keyLabels[key]
+  }
+  
+  // Bilinmeyen anahtarlar için orijinal değeri döndür
+  return key
+}
+
 const filteredParameters = computed(() => {
   let result = parameters.value
   if (searchTerm.value) {
     const term = searchTerm.value.toLowerCase()
-    result = result.filter(p => p.parameterKey?.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
+    result = result.filter(p => {
+      const displayName = formatParameterKey(p.parameterKey, p.parameterType)
+      return p.parameterKey?.toLowerCase().includes(term) || 
+             displayName?.toLowerCase().includes(term) ||
+             p.description?.toLowerCase().includes(term)
+    })
   }
   return result
 })
@@ -342,19 +502,42 @@ const resetForm = () => {
   form.month = null
   form.description = ''
   form.isActive = true
+  form.brackets = [
+    { order: 1, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 2, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 3, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 4, lowerLimit: 0, upperLimit: 0, rate: 0 },
+    { order: 5, lowerLimit: 0, upperLimit: 999999999, rate: 0 }
+  ]
+}
+
+// Değer tipi değiştiğinde dilim alanlarını hazırla
+const onValueTypeChange = () => {
+  if (form.valueType === 'bracket') {
+    // Dilim tipi seçildiğinde otomatik parametre adı ayarla
+    if (!form.parameterKey) {
+      form.parameterKey = 'income_tax_brackets'
+    }
+  }
 }
 
 const saveParameter = async () => {
   saving.value = true
   try {
-    const { id, ...formData } = form
+    // Dilim tipi için özel kaydetme
+    if (form.valueType === 'bracket') {
+      await saveBracketParameters()
+      return
+    }
+
+    const { id, brackets, ...formData } = form
     const data = { 
       year: formData.year,
       month: formData.month,
       parameterType: formData.parameterType,
       parameterKey: formData.parameterKey,
       valueType: formData.valueType,
-      parameterValue: formData.valueType === 'amount' ? formData.parameterValue : 0,
+      parameterValue: ['amount', 'multiplier', 'integer'].includes(formData.valueType) ? formData.parameterValue : 0,
       percentageValue: formData.valueType === 'percentage' ? formData.percentageValue : null,
       description: formData.description,
       isActive: formData.isActive
@@ -377,10 +560,83 @@ const saveParameter = async () => {
   }
 }
 
+// Dilim parametrelerini kaydet (5 dilim için ayrı ayrı kayıtlar oluşturur)
+const saveBracketParameters = async () => {
+  try {
+    let successCount = 0
+    
+    for (const bracket of form.brackets) {
+      // Oran kaydı
+      const rateData = {
+        year: form.year,
+        month: form.month,
+        parameterType: form.parameterType || 'IncomeTaxBracket',
+        parameterKey: `bracket${bracket.order}_rate`,
+        valueType: 'percentage',
+        parameterValue: 0,
+        percentageValue: bracket.rate,
+        description: `${bracket.order}. Dilim Oranı (%)`,
+        isActive: form.isActive
+      }
+      
+      // Alt limit kaydı
+      const lowerData = {
+        year: form.year,
+        month: form.month,
+        parameterType: form.parameterType || 'IncomeTaxBracket',
+        parameterKey: `bracket${bracket.order}_lower`,
+        valueType: 'amount',
+        parameterValue: bracket.lowerLimit,
+        percentageValue: null,
+        description: `${bracket.order}. Dilim Alt Limit`,
+        isActive: form.isActive
+      }
+      
+      // Üst limit kaydı
+      const upperData = {
+        year: form.year,
+        month: form.month,
+        parameterType: form.parameterType || 'IncomeTaxBracket',
+        parameterKey: `bracket${bracket.order}_upper`,
+        valueType: 'amount',
+        parameterValue: bracket.upperLimit,
+        percentageValue: null,
+        description: `${bracket.order}. Dilim Üst Limit`,
+        isActive: form.isActive
+      }
+
+      // Kaydetme işlemleri
+      const results = await Promise.all([
+        window.electronAPI.salaryParameter.create(rateData),
+        window.electronAPI.salaryParameter.create(lowerData),
+        window.electronAPI.salaryParameter.create(upperData)
+      ])
+      
+      if (results.every(r => r.success)) {
+        successCount++
+      }
+    }
+
+    if (successCount === 5) {
+      success('Tüm vergi dilimleri başarıyla kaydedildi')
+      closeModal()
+      await loadParameters()
+    } else {
+      error(`${successCount}/5 dilim kaydedildi. Bazı dilimler zaten mevcut olabilir.`)
+      await loadParameters()
+    }
+  } catch (err) {
+    error('Dilimler kaydedilirken hata oluştu')
+  } finally {
+    saving.value = false
+  }
+}
+
 const deleteParameter = async (param: any) => {
+  const displayName = formatParameterKey(param.parameterKey, param.parameterType)
   const confirmed = await confirm({
     title: 'Parametre Sil',
-    message: `"${param.parameterKey}" parametresini silmek istediğinize emin misiniz?`,
+    message: `"${displayName}" parametresini silmek istediğinize emin misiniz?`,
     confirmText: 'Sil',
     type: 'danger'
   })
@@ -604,7 +860,7 @@ onMounted(() => {
 }
 
 .modal-container {
-  background: white; border-radius: 12px; width: 90%; max-width: 600px;
+  background: white; border-radius: 12px; width: 90%; max-width: 750px;
   max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
@@ -651,6 +907,14 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.form-hint {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
 .checkbox-label input { width: 18px; height: 18px; }
 
@@ -671,6 +935,86 @@ onMounted(() => {
 .btn-secondary:hover { background: #dee2e6; }
 .btn-outline { background: transparent; border: 1px solid #dee2e6; color: #495057; }
 .btn-outline:hover { background: #f8f9fa; }
+
+/* Dilim (Bracket) Stilleri */
+.bracket-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.bracket-header {
+  margin-bottom: 1rem;
+}
+
+.bracket-header h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.bracket-info {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.bracket-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bracket-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr 120px;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.bracket-row-header {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #495057;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.bracket-col {
+  display: flex;
+  align-items: center;
+}
+
+.bracket-col-order {
+  font-weight: 600;
+  color: #0466c8;
+  font-size: 0.9rem;
+}
+
+.bracket-input {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  font-family: 'Consolas', monospace;
+}
+
+.bracket-input:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+}
+
+.readonly-input {
+  background: #f8f9fa;
+  color: #495057;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.parameter-name {
+  font-weight: 500;
+  color: #2c3e50;
+}
 
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }

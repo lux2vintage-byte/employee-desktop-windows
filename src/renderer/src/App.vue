@@ -117,6 +117,7 @@ const menus = ref([
       { path: '/payroll/bonuses', label: 'Prim / İkramiye', icon: '🎁' },
       { path: '/advances', label: 'Avans Talepleri', icon: '💵', divider: 'Ödemeler' },
       { path: '/salary/payments', label: 'Ödeme Geçmişi', icon: '💸' },
+      { path: '/salary/employee-salaries', label: 'Personel Ücretleri', icon: '💰', divider: 'Ücret Tanımlamaları' },
       { path: '/salary/allowances', label: 'Ek Ödemeler / Kesintiler', icon: '📊' }
     ]
   },
@@ -159,7 +160,9 @@ const menus = ref([
       { path: '/settings/roles', label: 'Rol ve Yetki Tanımları', icon: '🔐', divider: 'Tanımlamalar' },
       { path: '/settings/leave-rights', label: 'İzin Hakları Tanımlama', icon: '📋' },
       { path: '/settings/parameter-types', label: 'Parametre Türü Tanımlama', icon: '📑' },
+      { path: '/settings/payroll-design', label: 'Bordro Tasarımı', icon: '📊', divider: 'Bordro' },
       { path: '/salary/parameters', label: 'Bordro Parametreleri', icon: '⚙️' },
+      { path: '/settings/payroll-rules', label: 'Bordro Hesaplama Kuralları', icon: '🧮' },
       { path: '/settings/modules', label: 'Genel Modül Ayarları', icon: '🔧' }
     ]
   }

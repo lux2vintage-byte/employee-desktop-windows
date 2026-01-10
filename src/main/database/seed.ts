@@ -6,6 +6,10 @@ import * as log from 'electron-log';
 import { LeaveTypeService } from '../services/LeaveTypeService';
 import { SettingsService } from '../services/SettingsService';
 import { LeaveTypeRepository } from '../repositories/LeaveTypeRepository';
+import { ParameterTypeRepository } from '../repositories/ParameterTypeRepository';
+import { SalaryParameterRepository } from '../repositories/SalaryParameterRepository';
+import { PayrollColumnMappingRepository } from '../repositories/PayrollColumnMappingRepository';
+import { PayrollFormulaVariableRepository } from '../repositories/PayrollFormulaVariableRepository';
 
 /**
  * Veritabanı seed işlemleri
@@ -46,6 +50,30 @@ async function seed() {
     
     const seededSettingsCount = await settingsService.seedDefaults();
     log.info(`${seededSettingsCount} varsayılan ayar oluşturuldu`);
+
+    // ==================== PARAMETRE TÜRLERİ ====================
+    log.info('Varsayılan parametre türleri oluşturuluyor...');
+    const parameterTypeRepo = new ParameterTypeRepository(prisma);
+    const createdParameterTypes = await parameterTypeRepo.seedDefaults();
+    log.info(`${createdParameterTypes.length} varsayılan parametre türü oluşturuldu`);
+
+    // ==================== BORDRO PARAMETRELERİ (2025) ====================
+    log.info('2025 yılı bordro parametreleri oluşturuluyor...');
+    const salaryParameterRepo = new SalaryParameterRepository(prisma);
+    const createdSalaryParameters = await salaryParameterRepo.seedDefaultParameters(2025);
+    log.info(`${createdSalaryParameters.length} varsayılan bordro parametresi oluşturuldu`);
+
+    // ==================== BORDRO KOLON MAPPING'LERİ ====================
+    log.info('Bordro kolon eşleştirmeleri oluşturuluyor...');
+    const columnMappingRepo = new PayrollColumnMappingRepository(prisma);
+    const createdMappings = await columnMappingRepo.seedDefaultMappings();
+    log.info(`${createdMappings.length} varsayılan kolon eşleştirmesi oluşturuldu`);
+
+    // ==================== BORDRO FORMÜL DEĞİŞKENLERİ ====================
+    log.info('Bordro formül değişkenleri oluşturuluyor...');
+    const formulaVariableRepo = new PayrollFormulaVariableRepository(prisma);
+    const createdVariables = await formulaVariableRepo.seedDefaultVariables();
+    log.info(`${createdVariables.length} varsayılan formül değişkeni oluşturuldu`);
 
     // ==================== SİSTEM KONFİGÜRASYONLARI ====================
     await dbService.setConfig('app_version', '1.0.0');
@@ -155,6 +183,27 @@ async function seedDefaultsOnly() {
     const settingsService = new SettingsService(prisma);
     const seededSettingsCount = await settingsService.seedDefaults();
     log.info(`${seededSettingsCount} varsayılan ayar oluşturuldu`);
+
+    // Varsayılan parametre türleri
+    const parameterTypeRepo = new ParameterTypeRepository(prisma);
+    const createdParameterTypes = await parameterTypeRepo.seedDefaults();
+    log.info(`${createdParameterTypes.length} varsayılan parametre türü oluşturuldu`);
+
+    // Varsayılan bordro parametreleri (güncel yıl)
+    const currentYear = new Date().getFullYear();
+    const salaryParameterRepo = new SalaryParameterRepository(prisma);
+    const createdSalaryParameters = await salaryParameterRepo.seedDefaultParameters(currentYear);
+    log.info(`${createdSalaryParameters.length} varsayılan bordro parametresi oluşturuldu (${currentYear} yılı)`);
+
+    // Varsayılan bordro kolon eşleştirmeleri
+    const columnMappingRepo = new PayrollColumnMappingRepository(prisma);
+    const createdMappings = await columnMappingRepo.seedDefaultMappings();
+    log.info(`${createdMappings.length} varsayılan kolon eşleştirmesi oluşturuldu`);
+
+    // Varsayılan formül değişkenleri
+    const formulaVariableRepo = new PayrollFormulaVariableRepository(prisma);
+    const createdVariables = await formulaVariableRepo.seedDefaultVariables();
+    log.info(`${createdVariables.length} varsayılan formül değişkeni oluşturuldu`);
 
     await dbManager.close();
     log.info('Varsayılan veriler başarıyla seed edildi');

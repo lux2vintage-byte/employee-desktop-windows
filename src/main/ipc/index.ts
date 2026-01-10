@@ -26,3 +26,4 @@ export { setupReportHandlers, initializeReportController } from './report-handle
 export { setupDayTypeHandlers, initializeDayTypeController } from './day-type-handlers'
 export { setupCalendarHandlers } from './calendar-handlers'
 export { setupParameterTypeHandlers, initializeParameterTypeController } from './parameter-type-handlers'
+export { setupPayrollColumnMappingHandlers, initializePayrollColumnMappingController } from './payroll-column-mapping-handlers'
